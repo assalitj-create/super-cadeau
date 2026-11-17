@@ -172,6 +172,7 @@ textarea.code{font:12px/1.3 ui-monospace,Menlo,monospace;min-height:90px}
 .balance{background:var(--gold);color:var(--goldink);border-radius:14px;padding:14px 18px;font-weight:800;margin-bottom:16px}
 .note{font-size:13px;color:var(--ink-m);margin:0 0 16px}
 /* ===== DA « Pop cadeau » ===== */
+.alert{background:#FAD0D5;color:#111;border:2px solid #111;border-radius:10px;padding:9px 12px;font-weight:700;font-size:14px;margin:0 0 10px}.alert[hidden]{display:none}
 .badge.shared{background:var(--ac2)}.badge.lock{padding:3px 10px 3px 8px;font-size:13px}.badge.lock svg{width:15px;height:15px}.badge.lock{gap:5px;align-items:center}
 .stat{min-width:0;padding:12px 12px}.stat b{font-size:20px;white-space:nowrap}.stat span{display:block;overflow-wrap:anywhere}.stats{overflow:hidden}
 body.andrea{--ac:#2B59C3;--ac2:#DCE6FA;--alt:#1E7A52}
@@ -762,8 +763,8 @@ function syncView() {
 /* ================= Formulaires ================= */
 function personForm(p) {
   p = p || {};
-  const os = others(me), cur = p.id ? memOf(p) : USERS;
-  const boxes = `<div class="mbox"><div class="sub" style="margin:8px 0 6px;font-weight:500">Partagé avec</div><div class="chips">${os.map(o => `<label class="chip"><input type="checkbox" name="mem" value="${o}" ${cur.includes(o) ? 'checked' : ''}>${esc(o)}</label>`).join('')}</div></div>`;
+  const os = others(me), cur = p.id ? memOf(p) : [];
+  const boxes = `<div class="mbox"><div class="sub" style="margin:8px 0 6px;font-weight:500">Partagé avec</div><div class="chips">${os.map(o => `<label class="chip"><input type="checkbox" name="mem" value="${o}" ${cur.includes(o) ? 'checked' : ''}>${esc(o)}</label>`).join('')}</div><p id="sharerr" class="alert" hidden>Personne n’est sélectionné pour le partage. Coche au moins une personne, ou choisis « Cadeau personnel ».</p></div>`;
   return `<form data-form="person" data-id="${p.id || ''}"><h2>${p.id ? 'Modifier' : 'Nouvelle personne'}</h2>
   <label>Prénom ou nom<input name="name" required maxlength="60" value="${esc(p.name || '')}" placeholder="Maman, Tonton Alex…"></label>
   ${p.id ? (p.scope === 'private' ? `<p class="sub" style="margin:0 0 6px">Cadeau personnel : visible uniquement sur cet appareil.</p>` : boxes) : `<div style="margin-bottom:6px"><div class="sub" style="margin-bottom:6px;font-weight:500">Pour quel type de cadeau ?</div>
@@ -922,6 +923,7 @@ document.addEventListener('submit', e => {
   } else if (f.dataset.form === 'person') {
     const old = S.people[id] || {}, scope = isNew ? (E.scope.value || 'shared') : (old.scope || 'shared');
     const checked = Array.from(f.querySelectorAll('input[name=mem]:checked')).map(x => x.value);
+    if (scope !== 'private' && !checked.length) { const x = $('#sharerr'); if (x) { x.hidden = false; x.scrollIntoView({ block: 'nearest' }); } return; }
     const members = USERS.filter(u => u === me || checked.includes(u));
     put('people', id, scope === 'private' ? { name: E.name.value.trim(), scope, owner: old.owner || me } : { name: E.name.value.trim(), scope, members });
     closeModal(); render(); if (isNew) toast(scope === 'private' ? 'Personne ajoutée, uniquement sur cet appareil' : 'Personne ajoutée, visible par ' + (listFr(members.filter(u => u !== me)) || 'toi seulement'));
