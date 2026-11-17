@@ -172,6 +172,7 @@ textarea.code{font:12px/1.3 ui-monospace,Menlo,monospace;min-height:90px}
 .balance{background:var(--gold);color:var(--goldink);border-radius:14px;padding:14px 18px;font-weight:800;margin-bottom:16px}
 .note{font-size:13px;color:var(--ink-m);margin:0 0 16px}
 /* ===== DA « Pop cadeau » ===== */
+.badge.shared{background:var(--ac2)}.badge.lock{padding:3px 10px 3px 8px;font-size:13px}.badge.lock svg{width:15px;height:15px}.badge.lock{gap:5px;align-items:center}
 .stat{min-width:0;padding:12px 12px}.stat b{font-size:20px;white-space:nowrap}.stat span{display:block;overflow-wrap:anywhere}.stats{overflow:hidden}
 body.andrea{--ac:#2B59C3;--ac2:#DCE6FA;--alt:#1E7A52}
 form:has(input[value=private]:checked) .mbox{display:none}
@@ -285,6 +286,7 @@ const IC = {
   pay: svg('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>'),
   track: svg('<path d="M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10"/>'),
   ticket: svg('<path d="M4 8a2 2 0 002-2h12a2 2 0 002 2v2a2 2 0 000 4v2a2 2 0 00-2 2H6a2 2 0 00-2-2v-2a2 2 0 000-4z"/><path d="M12 8v1M12 11.5v1M12 15v1"/>'),
+  users: svg('<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14.5c2.5 0 4 1.5 4 4"/>'),
   more: svg('<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>'),
   lock: svg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>'),
   tree: svg('<path d="M12 2l-5 7h3l-4 6h4l-3 5h10l-3-5h4l-4-6h3z"/><path d="M12 20v2"/>'),
@@ -508,7 +510,7 @@ function homeView() {
     const thumbs = withImg.length ? withImg.map(g => `<i style="background-image:url('${esc(g.img).replace(/'/g, '%27')}')"></i>`).join('') : `<i>${IC.gift}</i>`;
     return `<button class="card pcard" data-act="open" data-id="${p.id}">
       <div class="thumbs">${thumbs}</div>
-      <div class="grow"><div class="pname">${esc(p.name)}${p.scope === 'private' ? ` <span class="badge lock">${IC.lock}Personnel</span>` : ''}</div>
+      <div class="grow"><div class="pname">${esc(p.name)}</div><div style="margin:3px 0 2px">${shareBadge(p)}</div>
       <div class="pmeta">${n.length} idée${n.length > 1 ? 's' : ''}, dont ${pc} retenue${pc > 1 ? 's' : ''}</div>
       <div class="bar"><i class="${ch > bt && bt ? 'over' : ''}" style="width:${bt ? Math.min(100, ch / bt * 100) : 0}%"></i></div>
       <div class="pmeta">Retenu ${eur(ch)} sur ${bt ? eur(bt) : 'un budget à définir'}</div></div></button>`;
@@ -594,6 +596,11 @@ function setStatus(id, st, extra) {
 }
 
 /* ---- Détail personne ---- */
+function shareBadge(p) {
+  if (p.scope === 'private') return `<span class="badge lock">${IC.lock}Personnel</span>`;
+  const os = memOf(p).filter(u => u !== me);
+  return `<span class="badge lock shared">${IC.users}${os.length ? 'Avec ' + esc(listFr(os)) : 'Toi seul'}</span>`;
+}
 function personView() {
   const p = S.people[cur];
   if (!personOk(cur)) { view = 'home'; return homeView(); }
@@ -601,7 +608,7 @@ function personView() {
   const rank = { choisi: 0, achete: 1, recupere: 2, idee: 3, offert: 4 };
   const gs = giftsOf(cur).sort((a, b) => (rank[a.status] - rank[b.status]) || b.u - a.u);
   return `<div class="row between"><button class="btn ghost sm" data-act="nav" data-v="home">← Retour</button><div><button class="link" data-act="editPerson" data-id="${cur}">Modifier</button><button class="link" data-act="delPerson" data-id="${cur}">Supprimer</button></div></div>
-  <h2 style="margin-top:14px">${esc(p.name)}${priv ? ` <span class="badge lock" style="font-size:13px;vertical-align:middle">${IC.lock}Personnel</span>` : ''}</h2>
+  <h2 style="margin-top:14px">${esc(p.name)}</h2><div style="margin:-8px 0 14px">${shareBadge(p)}</div>
   ${priv ? `<p class="note" style="margin-top:-8px">Cadeau personnel : il reste uniquement sur cet appareil, personne d’autre ne le voit jamais.</p>` : ''}
   <div class="card paper">
     <div class="row" style="align-items:flex-end">
