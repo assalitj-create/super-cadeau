@@ -578,7 +578,7 @@ function syncView() {
     <div class="row" style="margin-bottom:6px"><span id="syncdot2" class="sync s-${syncState}" style="background:${syncState === 'ok' ? '#1E9E64' : syncState === 'err' ? '#E5484D' : '#F3C65B'};box-shadow:none"></span><b id="synctxt">${SYNC_LABEL[syncState]}</b></div>
     ${syncState === 'err' && syncErrMsg ? `<p class="sub" style="color:var(--bad);margin:0 0 8px">${esc(syncErrMsg)}</p>` : ''}
     <p class="sub" style="margin:0 0 12px">Tout ce que vous ajoutez ou modifiez, l’un comme l’autre, apparaît chez l’autre en quelques secondes. ${syncAt ? `Dernière synchro à ${fmt(syncAt)}.` : ''}</p>
-    <div class="row"><button class="btn" data-act="syncNow">Synchroniser maintenant</button><button class="btn sec" data-act="copyUrl">Copier l’adresse à envoyer à l’autre</button><button class="link" data-act="syncOff">Déconnecter</button></div></div>`
+    <div class="row"><button class="btn" data-act="syncNow">Synchroniser maintenant</button>${DEFAULT_SYNC ? '' : `<button class="btn sec" data-act="copyUrl">Copier l’adresse à envoyer à l’autre</button><button class="link" data-act="syncOff">Déconnecter</button>`}</div></div>`
   : `<div class="card"><h3 style="margin-top:0">Activer la synchronisation automatique</h3>
     <p class="sub" style="margin-top:0">À faire une seule fois, par une seule personne (2 minutes). L’autre n’aura qu’à coller l’adresse obtenue.</p>
     <ol class="steps">
@@ -591,7 +591,7 @@ function syncView() {
     <label>Adresse de l’application Web<input id="syncurl" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec"></label>
     <button class="btn block" data-act="syncConnect">Connecter</button></div>`;
   const hosted = /^https?:$/.test(location.protocol);
-  const share = `<div class="card"><h3 style="margin-top:0">Partager l’application avec l’autre personne</h3>
+  const share = DEFAULT_SYNC ? '' : `<div class="card"><h3 style="margin-top:0">Partager l’application avec l’autre personne</h3>
     ${syncUrl && hosted ? `<p class="sub" style="margin-top:0">Envoie ce lien : en l’ouvrant, la synchronisation est activée toute seule, sans rien coller.</p><button class="btn" data-act="copyInvite">Copier le lien d’invitation</button>` : `<p class="sub" style="margin-top:0">Le plus simple : héberger le fichier gratuitement pour obtenir un lien (par exemple avec Netlify Drop : app.netlify.com/drop, en déposant un dossier contenant le fichier renommé <b>index.html</b>). Ouvre ensuite ce lien ici, puis reviens sur cet écran : un bouton « Copier le lien d’invitation » apparaîtra.</p><p class="sub" style="margin-bottom:0">Sinon : envoie-lui le fichier super-cadeau.html et l’adresse de synchro (bouton « Copier l’adresse » ci-dessus). Elle ouvre le fichier avec Chrome et colle l’adresse dans Plus › Synchronisation.</p>`}</div>`;
   return `<div><button class="btn ghost sm" data-act="nav" data-v="more">← Retour</button></div><h2 style="margin-top:14px">Synchronisation</h2>${auto}${share}
   <div class="card"><h3 style="margin-top:0">Sauvegarde manuelle</h3>
@@ -786,7 +786,9 @@ const GAS_CODE = "// Cadeaux Johann & Elsa - serveur de synchronisation (Google 
 const SYNC_KEY = 'cadeaux.sync';
 const SYNC_LABEL = { off: 'Synchronisation désactivée', busy: 'Synchronisation…', ok: 'Synchronisé', err: 'Hors ligne ou erreur de synchronisation' };
 let syncErrMsg = '';
-let syncUrl = ''; try { syncUrl = localStorage.getItem(SYNC_KEY) || ''; } catch (e) {}
+// Adresse du serveur de synchro intégrée à l'application : quand elle est renseignée, tout est automatique et rien n'est affiché à l'utilisateur.
+const DEFAULT_SYNC = 'https://script.google.com/macros/s/AKfycbxEWJLfqwKSxw3dZwcInOQE5-i7xlyqy2SEK-hxuzBrNz6XqFuo4pAV_Zt2UYXoWEkW/exec';
+let syncUrl = DEFAULT_SYNC; try { syncUrl = DEFAULT_SYNC || localStorage.getItem(SYNC_KEY) || ''; } catch (e) {}
 let inviteToast = false;
 try {
   const m = location.hash.match(/^#sync=(.+)$/);
