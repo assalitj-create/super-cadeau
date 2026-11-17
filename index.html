@@ -199,7 +199,7 @@ header.big{position:relative}
 .top{padding:12px 20px}
 .top h1{color:#fff;font-weight:800;font-size:21px;letter-spacing:-.03em}
 .top h1{white-space:nowrap;font-size:19px}
-.top h1 svg{width:32px;height:32px;border:0;box-shadow:none;background:none;border-radius:9px}
+.top h1 svg{width:34px;height:34px;border:0;box-shadow:none;background:none;border-radius:0}
 .chip-user{font-size:14px}
 .chip-user i svg{width:16px;height:16px}
 .top h1 small{color:#FFE3DE}
@@ -458,6 +458,7 @@ function daysToXmas() {
   return d === 0 ? 'C’est Noël !' : d === 1 ? 'Noël, c’est demain' : d + ' jours avant Noël';
 }
 
+const LOGO_W = "<svg aria-hidden='true' viewBox='10 2 80 92'><rect x='22' y='52' width='56' height='36' rx='4' fill='none' stroke='#fff' stroke-width='6'/><rect x='16' y='42' width='68' height='12' rx='3' fill='none' stroke='#fff' stroke-width='6'/><line x1='50' y1='42' x2='50' y2='88' stroke='#fff' stroke-width='6'/><polygon points='62,6 34,50 49,50 39,84 74,36 57,36 67,6' fill='#fff' stroke='#D8392B' stroke-width='5' stroke-linejoin='round' paint-order='stroke'/></svg>";
 const LOGO = "<svg aria-hidden='true' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='#FFF1D6'/><rect x='22' y='52' width='56' height='36' rx='4' fill='none' stroke='#D8392B' stroke-width='5'/><rect x='16' y='42' width='68' height='12' rx='3' fill='none' stroke='#D8392B' stroke-width='5'/><line x1='50' y1='42' x2='50' y2='88' stroke='#D8392B' stroke-width='5'/><polygon points='62,8 36,48 49,48 40,80 72,36 57,36 66,8' fill='#F4C542' stroke='#B72B20' stroke-width='3' stroke-linejoin='round'/></svg>";
 const emptyS = () => ({ people: {}, gifts: {}, budgets: {}, shares: {}, likes: {}, tickets: {}, auth: {}, groups: {}, pgroup: {}, users: {}, votes: {}, ballots: {} });
 let S = emptyS(), me = null;
@@ -779,7 +780,7 @@ function render() {
   const hero = view === 'person'
       ? `<div class="hero"><div class="hrow"><button class="rb" data-act="nav" data-v="home" aria-label="Retour">${IC.back}</button><span><button class="rb" data-act="editPerson" data-id="${cur}" aria-label="Modifier">${IC.edit}</button><button class="rb" data-act="delPerson" data-id="${cur}" aria-label="Supprimer">${IC.trash}</button></span></div><div class="hname">${esc(S.people[cur].name)}</div><div class="hshare">${shareAvs(S.people[cur])}</div></div>`
       : '';
-  hdr.innerHTML = `<div class="top"><h1>${LOGO}Super Cadeau</h1><div class="row" style="gap:12px;flex-wrap:nowrap"><span id="syncdot" class="sync s-${syncState}" title="${SYNC_LABEL[syncState]}"></span><button class="chip-user" data-act="profileForm" aria-label="Mon compte, mes informations"><i>${IC.me}</i>Mon compte</button></div></div>` + hero;
+  hdr.innerHTML = `<div class="top"><h1>${LOGO_W}Super Cadeau</h1><div class="row" style="gap:12px;flex-wrap:nowrap"><span id="syncdot" class="sync s-${syncState}" title="${SYNC_LABEL[syncState]}"></span><button class="chip-user" data-act="profileForm" aria-label="Mon compte, mes informations"><i>${IC.me}</i>Mon compte</button></div></div>` + hero;
   const items = [['home', IC.gift, 'Personnes'], ['ideas', IC.idea, 'Idées'], ['track', IC.track, 'Suivi'], ['budgets', IC.euro, 'Budgets'], ['pay', IC.pay, 'Paiements'], ['more', IC.more, 'Plus']];
   nav.innerHTML = items.map(([k, i, l]) => `<button data-act="nav" data-v="${k}" class="${(view === k || (view === 'person' && k === 'home') || (k === 'more' && (view === 'tickets' || view === 'sync'))) ? 'on' : ''}">${i}${l}</button>`).join('');
   app.innerHTML = ({ home: homeView, person: personView, ideas: ideasView, track: trackView, budgets: budgetsView, pay: payView, more: moreView, tickets: ticketsView, sync: syncView }[view] || homeView)();
