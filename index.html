@@ -652,7 +652,7 @@ function personView() {
   const gs = giftsOf(cur).sort((a, b) => (rank[a.status] - rank[b.status]) || b.u - a.u);
   return `<div class="row between"><button class="btn ghost sm" data-act="nav" data-v="home">← Retour</button><div><button class="link" data-act="editPerson" data-id="${cur}">Modifier</button><button class="link" data-act="delPerson" data-id="${cur}">Supprimer</button></div></div>
   <h2 style="margin-top:14px">${esc(p.name)}</h2><div style="margin:-8px 0 14px">${shareBadge(p)}</div>
-  ${priv ? `<p class="note" style="margin-top:-8px">${S.people[cur].scope === 'mine' ? 'Visible par toi seul, sur tous tes appareils.' : 'Cadeau personnel : il reste uniquement sur cet appareil, personne d’autre ne le voit jamais.'}</p>` : ''}
+  ${priv ? `<p class="note" style="margin-top:-8px">${S.people[cur].scope === 'mine' ? 'Pour toi seul : les autres ne le voient pas.' : 'Cette personne reste uniquement sur cet appareil. Ouvre « Modifier » pour la rendre visible sur tous tes appareils.'}</p>` : ''}
   <div class="card paper">
     <div class="row" style="align-items:flex-end">
       <label class="grow" style="margin:0">Mon budget (${esc(me)})<input type="number" min="0" step="1" inputmode="decimal" placeholder="€" value="${mb == null ? '' : mb}" data-bud="${cur}"></label>
@@ -811,10 +811,9 @@ function personForm(p) {
   const grp = `<div class="row2" style="margin-top:4px"><label>Mon groupe<select name="group"><option value="">Aucun groupe</option>${gs.map(g => `<option value="${g.id}" ${g.id === gcur ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}</select></label><label>Nouveau groupe<input name="newgroup" maxlength="40" placeholder="Ex. Famille"></label></div>`;
   return `<form data-form="person" data-id="${p.id || ''}"><h2>${p.id ? 'Modifier' : 'Nouvelle personne'}</h2>
   <label>Prénom ou nom<input name="name" required maxlength="60" value="${esc(p.name || '')}" placeholder="Maman, Tonton Alex…"></label>
-  ${p.id ? (isSoloP(p) ? `<p class="sub" style="margin:0 0 6px">${p.scope === 'mine' ? 'Visible par toi seul, sur tous tes appareils.' : 'Cadeau personnel : visible uniquement sur cet appareil.'}</p>` : boxes) : `<div style="margin-bottom:6px"><div class="sub" style="margin-bottom:6px;font-weight:500">Pour quel type de cadeau ?</div>
+  ${p.id ? (isSoloP(p) ? `<p class="sub" style="margin:0 0 6px">${p.scope === 'mine' ? 'Pour toi seul, visible sur tous tes appareils.' : 'Visible uniquement sur cet appareil (ancien réglage).'}</p>${p.scope === 'private' ? `<button type="button" class="btn sec sm" data-act="makeMine" data-id="${p.id}" style="margin:0 0 10px">Pour moi seul, sur tous mes appareils</button>` : ''}` : boxes) : `<div style="margin-bottom:6px"><div class="sub" style="margin-bottom:6px;font-weight:500">Pour quel type de cadeau ?</div>
     <label class="opt"><input type="radio" name="scope" value="shared" checked><span><b>Cadeau partagé</b><small>Vous organisez le cadeau et le budget ensemble. Choisis avec qui ci-dessous.</small></span></label>
-    <label class="opt"><input type="radio" name="scope" value="mine"><span><b>Pour moi seul, sur tous mes appareils</b><small>Visible par toi seul, sur ton téléphone et ton PC. Les autres ne le voient pas.</small></span></label>
-    <label class="opt"><input type="radio" name="scope" value="private"><span><b>Cet appareil seulement</b><small>Ne quitte jamais cet appareil. Personne d’autre ne le voit jamais.</small></span></label>${boxes}</div>`}
+    <label class="opt"><input type="radio" name="scope" value="mine"><span><b>Pour moi seul</b><small>Visible par toi seul, sur tous tes appareils. Les autres ne le voient pas.</small></span></label>${boxes}</div>`}
   ${grp}
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div></form>`;
 }
@@ -887,6 +886,7 @@ const actions = {
   retryAuth() { syncNow(true); },
   switch() { me = null; pending = null; TOK = ''; try { localStorage.removeItem('cadeaux.me'); localStorage.removeItem('cadeaux.tok'); } catch (e) {} render(); },
   pwForm() { openModal(pwForm()); },
+  makeMine(t) { const id = t.dataset.id; put('people', id, { scope: 'mine' }); closeModal(); render(); toast('Visible par toi seul, sur tous tes appareils'); },
   groupsForm() { openModal(groupsForm()); },
   gfilter(t) { fGroup = t.dataset.v; render(); },
   delGroup(t) { const id = t.dataset.id, g = S.groups[id]; confirmDlg(`Supprimer le groupe « ${g.name} » ? Les personnes ne sont pas supprimées, elles passent « Sans groupe ».`, () => { del('groups', id); closeModal(); render(); }, 'Supprimer'); },
@@ -981,7 +981,7 @@ document.addEventListener('submit', e => {
     const members = USERS.filter(u => u === me || checked.includes(u));
     put('people', id, scope === 'private' || scope === 'mine' ? { name: E.name.value.trim(), scope, owner: old.owner || me } : { name: E.name.value.trim(), scope, members });
     setGroup(id, E.group.value, E.newgroup.value);
-    closeModal(); render(); if (isNew) toast(scope === 'private' ? 'Personne ajoutée, uniquement sur cet appareil' : scope === 'mine' ? 'Personne ajoutée, visible par toi seul sur tous tes appareils' : 'Personne ajoutée, visible par ' + (listFr(members.filter(u => u !== me)) || 'toi seulement'));
+    closeModal(); render(); if (isNew) toast(scope === 'private' || scope === 'mine' ? 'Personne ajoutée, visible par toi seul' : 'Personne ajoutée, visible par ' + (listFr(members.filter(u => u !== me)) || 'toi seulement'));
   } else {
     const p = E.price.value, old = S.gifts[id] || {};
     const st = E.status.value, log = (old.log || []).slice(); if (old.status !== st) log.push({ s: st, by: me, at: Date.now() });
