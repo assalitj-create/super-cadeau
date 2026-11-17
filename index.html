@@ -533,28 +533,68 @@ let view = 'home', cur = null, fPerson = '', fStatus = '';
 
 /* ================= Aperçu de lien (image) ================= */
 const isImgUrl = u => /\.(jpe?g|png|gif|webp|avif)(\?.*)?$/i.test(u);
+/* Une « image » valide : adresse plausible, pas un pixel de suivi, et réellement chargeable (au moins 80 px). */
+const BADIMG = /fls-[a-z]+\.amazon|\/batch\/\d|\/pixel|beacon|tracking|spacer|blank\.|1x1|transparent\.(gif|png)/i;
+function loadsAsImage(u, min, ms) {
+  min = min || 80; ms = ms || 7000;
+  return new Promise(res => {
+    if (!/^https?:\/\//i.test(u || '') || BADIMG.test(u)) return res(false);
+    const im = new Image(); let done = false, t;
+    const end = ok => { if (!done) { done = true; clearTimeout(t); res(ok); } };
+    t = setTimeout(() => end(false), ms);
+    im.referrerPolicy = 'no-referrer';
+    im.onload = () => end(im.naturalWidth >= min && im.naturalHeight >= min);
+    im.onerror = () => end(false);
+    im.src = u;
+  });
+}
+async function firstGoodImage(list) {
+  const seen = new Set();
+  for (const u of list) { if (!u || seen.has(u)) continue; seen.add(u); if (await loadsAsImage(u)) return u; }
+  return '';
+}
+function pageInfo(html, url) {
+  const doc = new DOMParser().parseFromString(html, 'text/html'), abs = u => { try { return new URL(u, url).href; } catch (e) { return ''; } };
+  const meta = (...sel) => { for (const q of sel) { const m = doc.querySelector(q); if (m && m.content) return m.content; } return ''; };
+  const imgs = [];
+  ['meta[property="og:image"]', 'meta[property="og:image:secure_url"]', 'meta[property="og:image:url"]', 'meta[name="twitter:image"]', 'meta[name="twitter:image:src"]', 'meta[itemprop="image"]'].forEach(q => doc.querySelectorAll(q).forEach(m => m.content && imgs.push(abs(m.content))));
+  const ls = doc.querySelector('link[rel="image_src"]'); if (ls && ls.href) imgs.push(abs(ls.getAttribute('href')));
+  doc.querySelectorAll('script[type="application/ld+json"]').forEach(sc => {
+    try { const walk = o => { if (!o || typeof o !== 'object') return; if (Array.isArray(o)) return o.forEach(walk); if (o.image) { [].concat(o.image).forEach(x => imgs.push(abs(typeof x === 'string' ? x : (x && (x.url || x.contentUrl)) || ''))); } Object.values(o).forEach(walk); }; walk(JSON.parse(sc.textContent)); } catch (e) {}
+  });
+  const li = doc.querySelector('#landingImage, #imgBlkFront, #main-image');
+  if (li) {
+    ['data-old-hires', 'src'].forEach(a => li.getAttribute(a) && imgs.push(abs(li.getAttribute(a))));
+    try { Object.keys(JSON.parse(li.getAttribute('data-a-dynamic-image') || '{}')).forEach(k => imgs.push(k)); } catch (e) {}
+  }
+  return { imgs, title: meta('meta[property="og:title"]', 'meta[name="twitter:title"]') || doc.title || '', price: meta('meta[property="product:price:amount"]', 'meta[property="og:price:amount"]') };
+}
 async function fetchPreview(url) {
   if (isImgUrl(url)) return { img: url };
+  let title = '', price = '', logo = '';
+  const asin = (url.match(/\/(?:dp|gp\/product|d)\/([A-Z0-9]{10})(?:[/?]|$)/i) || [])[1];
+  let img = '';
   try {
     const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url));
     const j = await r.json();
     if (j && j.status === 'success' && j.data) {
-      const d = j.data, img = (d.image && d.image.url) || (d.logo && d.logo.url) || '';
-      if (img || d.title) return { img, title: d.title || '' };
+      const d = j.data; title = d.title || '';
+      if (d.logo && d.logo.url) logo = d.logo.url;
+      img = await firstGoodImage([d.image && d.image.url]);
     }
   } catch (e) {}
-  try {
-    const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
-    const html = await r.text();
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const meta = (...sel) => { for (const s of sel) { const m = doc.querySelector(s); if (m && m.content) return m.content; } return ''; };
-    let img = meta('meta[property="og:image"]', 'meta[property="og:image:url"]', 'meta[name="twitter:image"]', 'meta[itemprop="image"]');
-    if (img) { try { img = new URL(img, url).href; } catch (e) {} }
-    const title = meta('meta[property="og:title"]') || (doc.title || '');
-    const price = meta('meta[property="product:price:amount"]', 'meta[property="og:price:amount"]');
-    if (img || title) return { img, title, price };
-  } catch (e) {}
-  return null;
+  if (!img) {
+    for (const px of ['https://api.allorigins.win/raw?url=', 'https://corsproxy.io/?']) {
+      try {
+        const r = await fetch(px + encodeURIComponent(url)), html = await r.text();
+        const info = pageInfo(html, url); title = title || info.title; price = price || info.price;
+        img = await firstGoodImage(info.imgs); if (img) break;
+      } catch (e) {}
+    }
+  }
+  if (!img && asin) img = await firstGoodImage([`https://m.media-amazon.com/images/P/${asin}.01._SCLZZZZZZZ_.jpg`, `https://images-na.ssl-images-amazon.com/images/P/${asin}.01.LZZZZZZZ.jpg`]);
+  if (!img && logo) img = await firstGoodImage([logo]);
+  return (img || title) ? { img, title, price } : null;
 }
 
 /* ================= Rendu ================= */
@@ -774,7 +814,7 @@ function purchaseLine(g) {
 function giftCard(g, showPerson) {
   const p = S.people[g.pid], likes = USERS.filter(u => likedBy(g.id, u)), pl = purchaseLine(g);
   return `<article class="gift">
-    <div class="gimg">${IC.gift}${g.img ? `<img src="${esc(g.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+    <div class="gimg">${IC.gift}${g.img ? `<img src="${esc(g.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onload="if(this.naturalWidth<60||this.naturalHeight<60)this.remove()" onerror="this.remove()">` : ''}
       <span class="tagw">${g.price != null && g.price !== '' ? `<span class="tag">${eur(+g.price)}</span>` : '<span class="tag none">Prix ?</span>'}</span>
       ${g.status !== 'idee' ? `<span class="st ${g.status}">${STATUS[g.status]}</span>` : ''}</div>
     <div class="gbody">
@@ -1113,7 +1153,7 @@ async function runPreview(force) {
   pv.textContent = 'Recherche de l’image…';
   const r = await fetchPreview(url);
   if (!$('#sheet form[data-form="gift"]')) return;
-  if (!r || !r.img) { pv.textContent = 'Aucune image trouvée automatiquement (site protégé ?). Colle l’adresse d’une image dans le champ ci-dessus.'; if (r && r.title && !f.elements.t.value) f.elements.t.value = r.title.slice(0, 120); return; }
+  if (!r || !r.img) { pv.textContent = 'Aucune image utilisable trouvée automatiquement (site protégé ?). Colle l’adresse d’une image dans le champ ci-dessus.'; if (r && r.title && !f.elements.t.value) f.elements.t.value = r.title.slice(0, 120); return; }
   if (force || !f.elements.img.value) f.elements.img.value = r.img;
   if (r.title && !f.elements.t.value) f.elements.t.value = r.title.slice(0, 120);
   if (r.price && !f.elements.price.value && !isNaN(parseFloat(r.price))) f.elements.price.value = parseFloat(r.price);
@@ -1122,7 +1162,7 @@ async function runPreview(force) {
 function showPv() {
   const f = $('#sheet form[data-form="gift"]'); if (!f) return;
   const u = f.elements.img.value.trim(), pv = $('#pv');
-  pv.innerHTML = u ? `Aperçu :<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent='Cette image ne peut pas être affichée.'">` : '';
+  pv.innerHTML = u ? `Aperçu :<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onload="if(this.naturalWidth<60||this.naturalHeight<60)this.parentNode.textContent='Cette image est vide ou trop petite : colle une autre adresse.'" onerror="this.parentNode.textContent='Cette image ne peut pas être affichée.'">` : '';
 }
 
 /* ================= Synchro (export / import / fusion) ================= */
