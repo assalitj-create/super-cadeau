@@ -755,7 +755,7 @@ function profileForm() {
   <p id="pwerr" class="sub" style="color:var(--bad);margin:0 0 8px;min-height:1em"></p>
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Fermer</button><button class="btn">Changer le mot de passe</button></div>
   <p class="sub" style="margin:16px 0 0">Quelqu’un a oublié son mot de passe ? ${os.map(o => `<button type="button" class="link" data-act="resetOther" data-u="${o}">Réinitialiser celui de ${esc(o)}</button>`).join(' ')}<br>Il en choisira un nouveau à sa prochaine connexion.</p></form>
-  <div class="actions" style="margin-top:14px;border-top:1px solid var(--line,#d6e0ee);padding-top:14px"><button type="button" class="btn sec" data-act="switch">Changer d’utilisateur</button></div>`;
+  <div class="actions" style="margin-top:14px;border-top:1px solid var(--line,#d6e0ee);padding-top:14px"><button type="button" class="btn sec" data-act="switch">Se déconnecter</button></div>`;
 }
 
 function render() {
