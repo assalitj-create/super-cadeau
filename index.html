@@ -350,6 +350,7 @@ header.gate .dot{position:absolute;border-radius:50%}
 #splash .sp-p b{font-weight:800;color:#F4C542;letter-spacing:.01em}
 @keyframes spup{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){#splash *{animation-duration:.01s!important;animation-delay:0s!important}}
+.prow{display:flex;flex-wrap:nowrap;gap:6px}.prow .btn{flex:1 1 auto;min-width:0;padding-left:8px;padding-right:8px;font-size:13px;white-space:normal;line-height:1.15}
 .psec{font-size:16px;font-weight:800;margin:18px 0 8px}
 h2+.psec{margin-top:6px}
 .pvnote{margin-top:6px;font-weight:700;color:var(--ink)}
@@ -757,9 +758,8 @@ function profileForm() {
   <label>Nouveau mot de passe<input name="pw" type="password" autocomplete="new-password" minlength="4" required></label>
   <label>Confirme le nouveau<input name="pw2" type="password" autocomplete="new-password" minlength="4" required></label>
   <p id="pwerr" class="sub" style="color:var(--bad);margin:0 0 8px;min-height:1em"></p>
-  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Fermer</button><button class="btn">Changer le mot de passe</button></div>
-  </form>
-  <div class="actions" style="margin-top:14px;border-top:1px solid var(--line,#d6e0ee);padding-top:14px"><button type="button" class="btn sec" data-act="switch">Se déconnecter</button></div>`;
+  <div class="actions prow"><button type="button" class="btn ghost" data-act="closeModal">Fermer</button><button class="btn">Changer le mot de passe</button><button type="button" class="btn sec" data-act="switch">Se déconnecter</button></div>
+  </form>`;
 }
 
 function render() {
@@ -1264,7 +1264,7 @@ const actions = {
   },
   notme() { pending = null; render(); },
   retryAuth() { syncNow(true); },
-  switch() { me = null; pending = null; TOK = ''; try { localStorage.removeItem('cadeaux.me'); localStorage.removeItem('cadeaux.tok'); } catch (e) {} render(); },
+  switch() { closeModal(); me = null; pending = null; TOK = ''; try { localStorage.removeItem('cadeaux.me'); localStorage.removeItem('cadeaux.tok'); } catch (e) {} render(); },
   profileForm() { openModal(profileForm()); },
   setColor(t) { setUserColor(me, t.dataset.v); render(); openModal(profileForm()); toast('Couleur modifiée'); },
   makeMine(t) { const id = t.dataset.id; put('people', id, { scope: 'mine' }); closeModal(); render(); toast('Visible par toi seul, sur tous tes appareils'); },
