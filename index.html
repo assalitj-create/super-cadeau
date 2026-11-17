@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14503A" id="themecolor">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Super Cadeau">
+<title>Super Cadeau</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2064%2064%27%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2715%27%20fill=%27%23fff%27/%3E%3Crect%20x=%2721.5%27%20y=%2744%27%20width=%275%27%20height=%276%27%20fill=%27%236B4A2B%27/%3E%3Cpolygon%20points=%2725,5%2033,16%2017,16%27%20fill=%27%232E8B5E%27/%3E%3Cpolygon%20points=%2725,12%2037,28%2013,28%27%20fill=%27%2323784F%27/%3E%3Cpolygon%20points=%2725,21%2041,43%209,43%27%20fill=%27%2314503A%27/%3E%3Crect%20x=%2723%27%20y=%2742%27%20width=%2731%27%20height=%2717%27%20rx=%273%27%20fill=%27%23C62839%27/%3E%3Crect%20x=%2720%27%20y=%2736.5%27%20width=%2737%27%20height=%277%27%20rx=%272.5%27%20fill=%27%23A81F2F%27/%3E%3Crect%20x=%2735%27%20y=%2736.5%27%20width=%275%27%20height=%2722.5%27%20fill=%27%23F3C65B%27/%3E%3Cellipse%20cx=%2733%27%20cy=%2735.3%27%20rx=%274.6%27%20ry=%273%27%20fill=%27%23F3C65B%27%20transform=%27rotate(-22%2033%2035.3)%27/%3E%3Cellipse%20cx=%2742%27%20cy=%2735.3%27%20rx=%274.6%27%20ry=%273%27%20fill=%27%23F3C65B%27%20transform=%27rotate(22%2042%2035.3)%27/%3E%3Cpath%20d=%27M50%209%20L38%2030%20H45%20L40%2052%20L58%2026%20H50%20Z%27%20fill=%27none%27%20stroke=%27%23fff%27%20stroke-width=%274.5%27%20stroke-linejoin=%27round%27/%3E%3Cpath%20d=%27M50%209%20L38%2030%20H45%20L40%2052%20L58%2026%20H50%20Z%27%20fill=%27%23FFC21A%27%20stroke=%27%23D98300%27%20stroke-width=%271.2%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+ --bg:#F2F8F4;--paper:#fff;--ink:#14161B;--ink-m:#66726B;--line:#DAE7DF;--field:#ECF4EF;--t:var(--ink);--m:var(--ink-m);
+ --ok:#1E6B46;--okbg:#E3F2E9;--warn:#8A5600;--warnbg:#FFF1D6;--bad:#C62839;--badbg:#FCE6E9;
+ --ac:#1E6B46;--ac2:#E1F1E8;--hd:#14503A;--alt:#C62839;--gold:#F3C65B;--goldink:#3B2A00;--green:#1E6B46;
+ --sans:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--serif:var(--sans)}
+body.elsa{--bg:#FDF3F4;--ink-m:#756569;--line:#F0DBDE;--field:#F9EAEC;--ac:#C62839;--ac2:#FCE6E9;--hd:#A01B2D;--alt:#1E6B46}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;color-scheme:light}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.foil{}
+.lights{display:none}
+
+header{position:sticky;top:0;z-index:20;background:var(--hd);color:#fff;padding-top:env(safe-area-inset-top)}
+header::after{content:"";display:block;height:6px;background:repeating-linear-gradient(-45deg,#C62839 0 9px,#fff 9px 18px,#1E6B46 18px 27px,#fff 27px 36px)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:880px;margin:0 auto;padding:12px 20px}
+.top h1{font:800 20px/1 var(--sans);letter-spacing:-.02em;margin:0;display:flex;align-items:center;gap:8px;color:#fff}
+.top h1 svg{width:36px;height:36px;flex:none;border-radius:10px}
+.top h1 small{font:500 13px var(--sans);color:rgba(255,255,255,.72);margin-left:2px;letter-spacing:0}
+.chip-user{display:flex;align-items:center;gap:8px;border:0;background:rgba(255,255,255,.18);color:#fff;font-weight:700;border-radius:99px;padding:4px 14px 4px 4px;cursor:pointer}
+.sync{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.35);flex:none}
+.sync.s-ok{background:#7DF0B0;box-shadow:0 0 0 3px rgba(125,240,176,.28)}
+.sync.s-busy{background:var(--gold);animation:pulse 1s ease-in-out infinite}
+.sync.s-err{background:#FF8A8A}
+@keyframes pulse{50%{opacity:.3}}
+.tk{display:flex;flex-direction:column;gap:6px}
+.tk .tkhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tk .tkdesc{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.fchips{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap}
+.fchips button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--ink-m);cursor:pointer}
+.fchips button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.st.recupere{background:#0E7490;color:#fff}
+.st.offert{background:var(--gold);color:var(--goldink)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+label.chip{display:inline-flex;align-items:center;margin:0;padding:8px 14px;border:1px solid var(--line);border-radius:99px;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;background:#fff}
+label.chip input{display:none}
+label.chip:has(input:checked){background:var(--ac);border-color:var(--ac);color:#fff}
+.srow{display:flex;gap:14px;align-items:flex-start}
+.sthumb{width:64px;height:64px;border-radius:12px;background:var(--ac2) center/cover;flex:none;display:flex;align-items:center;justify-content:center;color:var(--ac)}
+.sthumb svg{width:26px;height:26px}
+.buyline{font-size:13px;color:var(--ink);background:var(--field);border-radius:8px;padding:6px 10px;margin-top:4px}
+.hist{list-style:none;padding:0;margin:0 0 6px;font-size:13px;color:var(--ink-m)}
+.hist li{padding:5px 0;border-top:1px solid var(--line)}
+.opt{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;color:var(--ink);font-size:15px}
+.opt input{width:auto;margin:4px 0 0}
+.opt small{display:block;font-weight:400;font-size:13px;color:var(--ink-m)}
+.opt:has(input:checked){border-color:var(--ac);background:var(--ac2)}
+.lock{display:inline-flex;align-items:center;gap:4px}
+.lock svg{width:13px;height:13px}
+.steps{padding-left:20px;margin:0 0 14px}.steps li{margin-bottom:8px}
+.chip-user i{font-style:normal;width:26px;height:26px;border-radius:50%;background:#fff;color:var(--hd);display:flex;align-items:center;justify-content:center;font-size:13px}
+
+main{max-width:880px;margin:0 auto;padding:24px 20px}
+h2{font:800 30px/1.1 var(--sans);letter-spacing:-.025em;margin:0 0 20px}
+h3{font:700 17px/1.2 var(--sans);letter-spacing:-.01em;margin:30px 0 12px}
+.sub{color:var(--ink-m);font-size:13px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px}
+.btn{background:var(--ac);color:#fff;border:0;border-radius:12px;padding:11px 18px;font-weight:700;cursor:pointer}
+.btn:hover{filter:brightness(.94)}
+.btn.sec{background:var(--ac2);color:var(--ac)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:var(--badbg);color:var(--bad)}
+.btn.sm{padding:7px 13px;font-size:13px;border-radius:10px}
+.btn.block{width:100%}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.grow{flex:1}
+.link{border:0;background:none;color:var(--ink-m);cursor:pointer;font-size:13px;font-weight:500;padding:4px 6px}
+.link:hover{color:var(--ac);text-decoration:underline}
+
+.stats{display:flex;background:var(--paper);border:1px solid var(--line);border-radius:16px;margin-bottom:6px}
+.stat{flex:1;padding:14px 18px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font:800 24px/1.15 var(--sans);letter-spacing:-.02em;color:var(--ac)}
+.stat span{font-size:13px;color:var(--ink-m)}
+
+.pcard{display:flex;gap:16px;align-items:center;width:100%;text-align:left;cursor:pointer;transition:border-color .15s}
+.pcard:hover{border-color:var(--ac)}
+.thumbs{display:flex;flex:none}
+.thumbs i{width:48px;height:48px;border-radius:50%;border:3px solid #fff;margin-left:-14px;background:var(--ac2) center/cover;display:flex;align-items:center;justify-content:center;color:var(--ac);overflow:hidden}
+.thumbs i:first-child{margin-left:0}
+.thumbs svg{width:22px;height:22px}
+.pname{font:700 18px/1.2 var(--sans);letter-spacing:-.01em}
+.pmeta{font-size:13px;color:var(--ink-m);margin-top:2px}
+.bar{height:6px;background:var(--field);border-radius:9px;overflow:hidden;margin:10px 0 6px}
+.bar i{display:block;height:100%;background:var(--ac);border-radius:9px}
+.bar i.over{background:#E8710A}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.gift{background:var(--paper);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+.gimg{aspect-ratio:4/3;position:relative;background:var(--ac2);display:flex;align-items:center;justify-content:center;color:var(--ac)}
+.gimg>svg{width:40px;height:40px;opacity:.55}
+.gimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#fff}
+.tagw{position:absolute;left:10px;bottom:10px}
+.tag{display:inline-block;background:var(--gold);color:var(--goldink);font-weight:800;font-size:14px;padding:4px 12px;border-radius:99px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.tag.none{background:#fff;color:var(--ink-m);font-weight:600}
+.st{position:absolute;left:10px;top:10px;padding:3px 11px;border-radius:99px;font-size:12px;font-weight:700;background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.st.choisi{background:var(--alt);color:#fff}
+.st.achete{background:var(--green);color:#fff}
+.gbody{padding:14px 16px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.gtitle{font:700 16px/1.3 var(--sans);letter-spacing:-.01em;overflow-wrap:anywhere}
+.meta{font-size:13px;color:var(--ink-m)}
+.meta b{color:var(--ink);font-weight:600}
+.glink{font-size:13px;color:var(--ac);overflow-wrap:anywhere;text-decoration:none;font-weight:500}
+.glink:hover{text-decoration:underline}
+.gact{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:auto;padding-top:10px}
+.seg{display:inline-flex;background:var(--field);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:5px 10px;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink-m);border-radius:8px}
+.seg button.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.like{border:0;background:var(--field);border-radius:99px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--ink-m);font-weight:500}
+.like.on{background:var(--badbg);color:var(--bad)}
+.badge{display:inline-block;font-size:12px;padding:2px 10px;border-radius:99px;background:var(--ac2);color:var(--ac);font-weight:700}
+.badge.ok{background:var(--okbg);color:var(--ok)}
+.badge.warn{background:var(--warnbg);color:var(--warn)}
+.badge.bad{background:var(--badbg);color:var(--bad)}
+
+nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;max-width:150px;border:0;background:transparent;padding:9px 1px 8px;cursor:pointer;color:var(--ink-m);font-size:11px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button svg{width:23px;height:23px}
+nav button.on{color:var(--ac);font-weight:700;position:relative}
+nav button.on::before{content:"";position:absolute;top:0;width:28px;height:3px;border-radius:0 0 4px 4px;background:var(--gold)}
+
+label{display:block;font-size:13px;font-weight:500;color:var(--ink-m);margin-bottom:12px}
+input,select,textarea{width:100%;margin-top:5px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-size:15px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ac);outline-offset:-1px;border-color:transparent}
+input[type=checkbox],input[type=radio]{accent-color:var(--ac)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.inl{display:flex;gap:8px;align-items:flex-end}
+.inl .btn{white-space:nowrap;height:44px}
+.pv{font-size:13px;color:var(--ink-m);margin-bottom:12px}
+.pv img{display:block;width:100%;max-height:200px;object-fit:contain;background:var(--field);border-radius:12px;margin-top:6px}
+.modal{position:fixed;inset:0;background:rgba(20,22,27,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.modal[hidden]{display:none}
+.sheet{width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:26px 20px calc(20px + env(safe-area-inset-bottom));background:linear-gradient(90deg,#C62839 0 33.3%,var(--gold) 33.3% 66.6%,#1E6B46 66.6%) top/100% 5px no-repeat,#fff}
+.sheet h2{font-size:24px;margin-bottom:18px}
+@media(min-width:600px){.modal{align-items:center}.sheet{border-radius:22px}}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--hd);color:#fff;font-weight:600;padding:11px 18px;border-radius:99px;font-size:14px;z-index:60;max-width:90vw;border-bottom:3px solid var(--gold)}
+.empty{text-align:center;color:var(--ink-m);padding:44px 16px}
+.empty svg{width:44px;height:44px;color:var(--gold);margin-bottom:10px}
+.table{width:100%;border-collapse:collapse}
+.table td,.table th{padding:10px 4px;text-align:left;font-size:14px;border-bottom:1px solid var(--line)}
+.table th{font-size:13px;color:var(--ink-m);font-weight:500}
+.table tfoot td{border-bottom:0;border-top:2px solid var(--gold)}
+.num{width:104px}
+.gprice{font-weight:800;color:var(--ac)}
+
+.who{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+.who button{border:1px solid var(--line);background:#fff;border-radius:20px;padding:32px 12px 26px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:16px;font:700 18px var(--sans);color:var(--ink);transition:border-color .15s}
+.who button:hover{border-color:var(--c)}
+.who button i{font-style:normal;width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 30px var(--sans);color:#fff;background:var(--c)}
+.who .j{--c:#1E6B46}.who .e{--c:#C62839}
+.share-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.share-row input{margin:0;padding:8px 10px;width:104px}
+.share-row label{margin:0;display:flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap}
+.share-row input[type=checkbox]{width:auto;margin:0}
+.amt{font:800 20px/1 var(--sans);letter-spacing:-.02em}
+textarea.code{font:12px/1.3 ui-monospace,Menlo,monospace;min-height:90px}
+.balance{background:var(--gold);color:var(--goldink);border-radius:14px;padding:14px 18px;font-weight:800;margin-bottom:16px}
+.note{font-size:13px;color:var(--ink-m);margin:0 0 16px}
+</style>
+</head>
+<body>
+<header id="hdr"></header>
+<main id="app"></main>
+<nav id="nav"></nav>
+<div class="modal" id="modal" hidden><div class="sheet paper" id="sheet"></div></div>
+<div id="toastbox"></div>
+
+<script>
+"use strict";
+/* ================= État & utilitaires ================= */
+const USERS = ['Johann', 'Elsa'];
+const other = u => USERS.find(x => x !== u);
+const COLL = ['people', 'gifts', 'budgets', 'shares', 'likes'];
+const STATUS = { idee: 'Idée', choisi: 'Retenu', achete: 'Acheté', recupere: 'Récupéré', offert: 'Offert' };
+const ORDER = Object.keys(STATUS), sidx = s => ORDER.indexOf(s);
+const NEXT = { idee: 'Retenir', choisi: 'Marquer acheté', achete: 'Marquer récupéré', recupere: 'Marquer offert' };
+const today = () => new Date().toLocaleDateString('sv-SE');
+const fmtD = t => new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+const fmtDT = t => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const giftCost = g => (g.paid != null && g.paid !== '' && +g.paid > 0) ? +g.paid : (+g.price || 0);
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const eur = n => (n == null || isNaN(n)) ? '—' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(n);
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
+const r2 = x => Math.round(x * 100) / 100;
+const svg = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const IC = {
+  gift: svg('<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12M12 8c-2-3-6-3-5 0 .5 1.5 3 1 5 0zM12 8c2-3 6-3 5 0-.5 1.5-3 1-5 0z"/>'),
+  idea: svg('<path d="M12 3l2.4 5 5.6.8-4 3.9 1 5.5-5-2.7-5 2.7 1-5.5-4-3.9 5.6-.8z"/>'),
+  euro: svg('<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5a4 4 0 100 7M7.5 11h5M7.5 13.5h5"/>'),
+  pay: svg('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>'),
+  track: svg('<path d="M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10"/>'),
+  ticket: svg('<path d="M4 8a2 2 0 002-2h12a2 2 0 002 2v2a2 2 0 000 4v2a2 2 0 00-2 2H6a2 2 0 00-2-2v-2a2 2 0 000-4z"/><path d="M12 8v1M12 11.5v1M12 15v1"/>'),
+  more: svg('<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>'),
+  lock: svg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>'),
+  tree: svg('<path d="M12 2l-5 7h3l-4 6h4l-3 5h10l-3-5h4l-4-6h3z"/><path d="M12 20v2"/>'),
+  sync: svg('<path d="M4 12a8 8 0 0113.7-5.7L20 8M20 4v4h-4M20 12a8 8 0 01-13.7 5.7L4 16M4 20v-4h4"/>')
+};
+
+const LOGO = "<svg aria-hidden='true' viewBox='0 0 64 64'><rect width='64' height='64' rx='15' fill='#fff'/><rect x='21.5' y='44' width='5' height='6' fill='#6B4A2B'/><polygon points='25,5 33,16 17,16' fill='#2E8B5E'/><polygon points='25,12 37,28 13,28' fill='#23784F'/><polygon points='25,21 41,43 9,43' fill='#14503A'/><rect x='23' y='42' width='31' height='17' rx='3' fill='#C62839'/><rect x='20' y='36.5' width='37' height='7' rx='2.5' fill='#A81F2F'/><rect x='35' y='36.5' width='5' height='22.5' fill='#F3C65B'/><ellipse cx='33' cy='35.3' rx='4.6' ry='3' fill='#F3C65B' transform='rotate(-22 33 35.3)'/><ellipse cx='42' cy='35.3' rx='4.6' ry='3' fill='#F3C65B' transform='rotate(22 42 35.3)'/><path d='M50 9 L38 30 H45 L40 52 L58 26 H50 Z' fill='none' stroke='#fff' stroke-width='4.5' stroke-linejoin='round'/><path d='M50 9 L38 30 H45 L40 52 L58 26 H50 Z' fill='#FFC21A' stroke='#D98300' stroke-width='1.2' stroke-linejoin='round'/></svg>";
+const emptyS = () => ({ people: {}, gifts: {}, budgets: {}, shares: {}, likes: {}, tickets: {} });
+let S = emptyS(), me = null;
+try {
+  const raw = JSON.parse(localStorage.getItem('cadeaux.v1') || 'null');
+  if (raw) S = Object.assign(emptyS(), raw);
+  me = localStorage.getItem('cadeaux.me');
+  if (!USERS.includes(me)) me = null;
+} catch (e) {}
+const persist = () => { try { localStorage.setItem('cadeaux.v1', JSON.stringify(S)); } catch (e) {} };
+const save = () => { persist(); if (typeof scheduleSync === 'function') scheduleSync(); };
+function put(coll, id, obj) { S[coll][id] = Object.assign({}, S[coll][id] || {}, obj, { u: Date.now() }); delete S[coll][id].d; save(); }
+function del(coll, id) { if (S[coll][id]) { S[coll][id].d = 1; S[coll][id].u = Date.now(); save(); } }
+const live = coll => Object.entries(S[coll]).filter(([, v]) => !v.d).map(([id, v]) => Object.assign({ id }, v));
+const visible = p => p.scope !== 'private' || p.owner === me;
+const personOk = pid => { const p = S.people[pid]; return !!(p && !p.d && visible(p)); };
+const peopleList = () => live('people').filter(visible);
+const isPriv = pid => !!(S.people[pid] && S.people[pid].scope === 'private');
+const membersOf = pid => isPriv(pid) ? [S.people[pid].owner] : USERS;
+/* Les cadeaux personnels ne quittent jamais l'appareil : ils sont filtrés de toute sortie (synchro, export, code). */
+function privRec(c, id, rec) {
+  if (c === 'people') return rec.scope === 'private';
+  if (c === 'gifts') return isPriv(rec.pid);
+  if (c === 'budgets') return isPriv(id.split('|')[0]);
+  const g = S.gifts[id.split('|')[0]]; return !!(g && isPriv(g.pid));
+}
+function sharedState() {
+  const o = emptyS();
+  COLL.forEach(c => Object.keys(S[c]).forEach(k => { if (!privRec(c, k, S[c][k])) o[c][k] = S[c][k]; }));
+  Object.keys(S.tickets || {}).forEach(k => { o.likes['ticket|' + k] = S.tickets[k]; }); // les tickets voyagent dans 'likes' (compatible avec le serveur existant)
+  delete o.tickets;
+  return o;
+}
+
+const budgetOf = (pid, u) => { const b = S.budgets[pid + '|' + u]; return b && !b.d && b.a != null ? b.a : null; };
+const shareOf = (gid, u) => { const s = S.shares[gid + '|' + u]; return s && !s.d ? s : null; };
+const likedBy = (gid, u) => { const l = S.likes[gid + '|' + u]; return !!(l && !l.d && l.v); };
+const giftsOf = pid => live('gifts').filter(g => g.pid === pid && personOk(g.pid));
+const chosenOf = pid => giftsOf(pid).filter(g => g.status !== 'idee');
+const chosenTotal = pid => chosenOf(pid).reduce((s, g) => s + giftCost(g), 0);
+const budgetTotal = pid => membersOf(pid).reduce((s, u) => s + (budgetOf(pid, u) || 0), 0);
+const domain = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return u; } };
+
+/* ---- Répartition automatique : moitié-moitié, ajustée aux budgets de chacun ---- */
+function computeShares() {
+  const out = {}, byP = {};
+  live('gifts').filter(g => personOk(g.pid) && !isPriv(g.pid) && g.status !== 'idee').forEach(g => (byP[g.pid] = byP[g.pid] || []).push(g));
+  Object.keys(byP).forEach(pid => {
+    const rem = {}; USERS.forEach(u => { const b = budgetOf(pid, u); rem[u] = b == null ? Infinity : b; });
+    const list = byP[pid].sort((a, b) => (a.c || 0) - (b.c || 0) || a.id.localeCompare(b.id));
+    list.filter(g => g.manual).forEach(g => {
+      const sh = {}; USERS.forEach(u => { const s = shareOf(g.id, u); sh[u] = s && s.a != null ? +s.a : 0; rem[u] -= sh[u]; });
+      out[g.id] = Object.assign(sh, { short: r2(giftCost(g) - USERS.reduce((s, u) => s + sh[u], 0)), manual: true });
+    });
+    list.filter(g => !g.manual).forEach(g => {
+      const P = giftCost(g), cap = u => Math.max(0, rem[u]);
+      const a = { Johann: Math.min(P / 2, cap('Johann')), Elsa: Math.min(P / 2, cap('Elsa')) };
+      let rest = P - a.Johann - a.Elsa;
+      USERS.forEach(u => { if (rest > 0) { const add = Math.min(rest, cap(u) - a[u]); a[u] += add; rest -= add; } });
+      USERS.forEach(u => { a[u] = r2(a[u]); });
+      if (P && rest <= 0.02) a.Elsa = r2(P - a.Johann);
+      USERS.forEach(u => { rem[u] -= a[u]; });
+      out[g.id] = Object.assign(a, { short: rest > 0.02 ? r2(rest) : 0 });
+    });
+  });
+  return out;
+}
+
+let view = 'home', cur = null, fPerson = '', fStatus = '';
+
+/* ================= Aperçu de lien (image) ================= */
+const isImgUrl = u => /\.(jpe?g|png|gif|webp|avif)(\?.*)?$/i.test(u);
+async function fetchPreview(url) {
+  if (isImgUrl(url)) return { img: url };
+  try {
+    const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url));
+    const j = await r.json();
+    if (j && j.status === 'success' && j.data) {
+      const d = j.data, img = (d.image && d.image.url) || (d.logo && d.logo.url) || '';
+      if (img || d.title) return { img, title: d.title || '' };
+    }
+  } catch (e) {}
+  try {
+    const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
+    const html = await r.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const meta = (...sel) => { for (const s of sel) { const m = doc.querySelector(s); if (m && m.content) return m.content; } return ''; };
+    let img = meta('meta[property="og:image"]', 'meta[property="og:image:url"]', 'meta[name="twitter:image"]', 'meta[itemprop="image"]');
+    if (img) { try { img = new URL(img, url).href; } catch (e) {} }
+    const title = meta('meta[property="og:title"]') || (doc.title || '');
+    const price = meta('meta[property="product:price:amount"]', 'meta[property="og:price:amount"]');
+    if (img || title) return { img, title, price };
+  } catch (e) {}
+  return null;
+}
+
+/* ================= Rendu ================= */
+function toast(msg) {
+  $('#toastbox').innerHTML = '';
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  $('#toastbox').appendChild(t); setTimeout(() => t.remove(), 2600);
+}
+function openModal(html) { $('#sheet').innerHTML = html; $('#modal').hidden = false; }
+function closeModal() { $('#modal').hidden = true; $('#sheet').innerHTML = ''; if (pendingRender) { pendingRender = false; render(); } }
+let pendingConfirm = null;
+function confirmDlg(msg, fn, label) {
+  pendingConfirm = fn;
+  openModal(`<h2>${esc(msg)}</h2><div class="actions"><button class="btn ghost" data-act="closeModal">Annuler</button><button class="btn danger" data-act="doConfirm">${esc(label || 'Supprimer')}</button></div>`);
+}
+const BULBS = ['#FFC94D', '#FF5C74', '#5FE0A8', '#6FB7FF'];
+const lights = () => '' ||  `<div class="lights" aria-hidden="true">${Array.from({ length: 32 }, (_, i) => `<span class="b" style="--bc:${BULBS[i % 4]};--d:${((i * 37) % 30) / 10}s"></span>`).join('')}</div>`;
+
+function render() {
+  document.body.className = me ? me.toLowerCase() : '';
+  $('#themecolor').content = me === 'Elsa' ? '#A01B2D' : '#14503A';
+  const hdr = $('#hdr'), nav = $('#nav'), app = $('#app');
+  if (!me) {
+    hdr.innerHTML = '<div class="top"><h1>' + LOGO + 'Super Cadeau</h1></div>'; nav.style.display = 'none';
+    app.innerHTML = `<div style="display:flex;justify-content:center;margin:18px 0 10px"><div style="width:96px;height:96px;filter:drop-shadow(0 8px 18px rgba(20,80,58,.28))">${LOGO}</div></div>
+      <h2 style="margin-top:8px;text-align:center">Qui es-tu ?</h2>
+      <p class="sub" style="margin:-8px 0 20px;text-align:center">Chacun a son espace. Vos données se partagent via l’onglet Synchro.</p>
+      <div class="who"><button class="j" data-act="who" data-v="Johann"><i>J</i>Johann</button>
+      <button class="e" data-act="who" data-v="Elsa"><i>E</i>Elsa</button></div>`;
+    return;
+  }
+  nav.style.display = 'flex';
+  hdr.innerHTML = `<div class="top"><h1>${LOGO}Super Cadeau</h1><div class="row" style="gap:12px;flex-wrap:nowrap"><span id="syncdot" class="sync s-${syncState}" title="${SYNC_LABEL[syncState]}"></span><button class="chip-user" data-act="switch" title="Changer d’utilisateur"><i>${esc(me[0])}</i>${esc(me)}</button></div></div>`;
+  const items = [['home', IC.gift, 'Personnes'], ['ideas', IC.idea, 'Idées'], ['track', IC.track, 'Suivi'], ['budgets', IC.euro, 'Budgets'], ['pay', IC.pay, 'Paiements'], ['more', IC.more, 'Plus']];
+  nav.innerHTML = items.map(([k, i, l]) => `<button data-act="nav" data-v="${k}" class="${(view === k || (view === 'person' && k === 'home') || (k === 'more' && (view === 'tickets' || view === 'sync'))) ? 'on' : ''}">${i}${l}</button>`).join('');
+  app.innerHTML = ({ home: homeView, person: personView, ideas: ideasView, track: trackView, budgets: budgetsView, pay: payView, more: moreView, tickets: ticketsView, sync: syncView }[view] || homeView)();
+}
+
+/* ---- Accueil ---- */
+function homeView() {
+  const people = peopleList().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  const gifts = live('gifts').filter(g => personOk(g.pid));
+  const mine = people.reduce((s, p) => s + (budgetOf(p.id, me) || 0), 0);
+  let h = `<h2>Salut ${esc(me)}</h2>
+  <div class="stats"><div class="stat"><b>${people.length}</b><span>personnes</span></div><div class="stat"><b>${gifts.length}</b><span>idées</span></div><div class="stat"><b>${eur(mine)}</b><span>mon budget</span></div></div>
+  <div class="row between" style="margin:18px 0 12px"><h3 style="margin:0">À qui offrir un cadeau ?</h3><button class="btn" data-act="addPerson">Ajouter une personne</button></div>`;
+  if (!people.length) return h + `<div class="empty">${IC.gift}<div>Ajoute la première personne à qui vous voulez faire un cadeau.</div></div>`;
+  return h + people.map(p => {
+    const ch = chosenTotal(p.id), bt = budgetTotal(p.id), n = giftsOf(p.id), pc = chosenOf(p.id).length;
+    const withImg = n.filter(g => g.img).slice(0, 3);
+    const thumbs = withImg.length ? withImg.map(g => `<i style="background-image:url('${esc(g.img).replace(/'/g, '%27')}')"></i>`).join('') : `<i>${IC.gift}</i>`;
+    return `<button class="card pcard" data-act="open" data-id="${p.id}">
+      <div class="thumbs">${thumbs}</div>
+      <div class="grow"><div class="pname">${esc(p.name)}${p.scope === 'private' ? ` <span class="badge lock">${IC.lock}Personnel</span>` : ''}</div>
+      <div class="pmeta">${n.length} idée${n.length > 1 ? 's' : ''}, dont ${pc} retenue${pc > 1 ? 's' : ''}</div>
+      <div class="bar"><i class="${ch > bt && bt ? 'over' : ''}" style="width:${bt ? Math.min(100, ch / bt * 100) : 0}%"></i></div>
+      <div class="pmeta">Retenu ${eur(ch)} sur ${bt ? eur(bt) : 'un budget à définir'}</div></div></button>`;
+  }).join('');
+}
+
+/* ---- Carte cadeau ---- */
+function purchaseLine(g) {
+  if (sidx(g.status) < 2) return '';
+  const last = s => (g.log || []).filter(l => l.s === s).pop();
+  const parts = [`Acheté${g.buyer ? ' par ' + esc(g.buyer) : ''}${g.store ? ' chez ' + esc(g.store) : ''}${g.paid ? ', ' + eur(+g.paid) : ''}${g.bdate ? ' le ' + esc(g.bdate.split('-').reverse().slice(0, 2).join('/')) : ''}`];
+  if (last('recupere')) parts.push(`récupéré le ${fmtD(last('recupere').at)}`);
+  if (last('offert')) parts.push(`offert le ${fmtD(last('offert').at)}`);
+  return parts.join(', ');
+}
+function giftCard(g, showPerson) {
+  const p = S.people[g.pid], likes = USERS.filter(u => likedBy(g.id, u)), pl = purchaseLine(g);
+  return `<article class="gift">
+    <div class="gimg">${IC.gift}${g.img ? `<img src="${esc(g.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+      <span class="tagw">${g.price != null && g.price !== '' ? `<span class="tag">${eur(+g.price)}</span>` : '<span class="tag none">Prix ?</span>'}</span>
+      ${g.status !== 'idee' ? `<span class="st ${g.status}">${STATUS[g.status]}</span>` : ''}</div>
+    <div class="gbody">
+      <div class="gtitle">${esc(g.t)}</div>
+      <div class="meta">Proposé par <b>${esc(g.by)}</b>${showPerson && p ? ` pour <b>${esc(p.name)}</b>` : ''}</div>
+      ${g.note ? `<div class="meta">${esc(g.note)}</div>` : ''}
+      ${g.url ? `<div><a class="glink" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer">${esc(domain(g.url))}</a></div>` : ''}
+      ${pl ? `<div class="buyline">${pl}</div>` : ''}
+      <div class="gact">
+        ${NEXT[g.status] ? `<button class="btn sm" data-act="next" data-id="${g.id}">${NEXT[g.status]}</button>` : ''}
+        <button class="like ${likedBy(g.id, me) ? 'on' : ''}" data-act="like" data-id="${g.id}" title="${likes.join(' & ') || 'Personne pour l’instant'}">♥ ${likes.length || 'J’aime'}</button>
+        <span style="margin-left:auto;white-space:nowrap"><button class="link" data-act="track" data-id="${g.id}">Suivi</button><button class="link" data-act="editGift" data-id="${g.id}">Modifier</button><button class="link" data-act="delGift" data-id="${g.id}">Supprimer</button></span>
+      </div></div></article>`;
+}
+
+/* ---- Suivi des cadeaux ---- */
+function trackView() {
+  const gs = live('gifts').filter(g => personOk(g.pid));
+  const by = s => gs.filter(g => g.status === s).sort((a, b) => (b.u || 0) - (a.u || 0));
+  const spent = gs.filter(g => sidx(g.status) >= 2).reduce((s, g) => s + giftCost(g), 0);
+  const toBuy = by('choisi').reduce((s, g) => s + giftCost(g), 0);
+  const ideas = by('idee').length, followed = gs.filter(g => g.status !== 'idee').length, given = by('offert').length;
+  let h = `<h2>Suivi des cadeaux</h2>
+  <div class="stats"><div class="stat"><b>${eur(spent)}</b><span>dépensé</span></div><div class="stat"><b>${eur(toBuy)}</b><span>reste à acheter</span></div><div class="stat"><b>${given}/${followed}</b><span>offerts</span></div></div>`;
+  if (!followed) return h + `<div class="empty">${IC.track}<div>Passe un cadeau en « Retenu » pour le suivre ici, de l’achat jusqu’au moment de l’offrir.</div></div>${ideas ? `<p class="note" style="text-align:center">${ideas} idée${ideas > 1 ? 's' : ''} pas encore retenue${ideas > 1 ? 's' : ''}.</p>` : ''}`;
+  const sections = [['choisi', 'À acheter'], ['achete', 'Achetés, à récupérer'], ['recupere', 'Récupérés, à offrir'], ['offert', 'Offerts']];
+  sections.forEach(([s, title]) => {
+    const list = by(s); if (!list.length) return;
+    h += `<h3>${title} <span class="sub">${list.length}</span></h3>` + list.map(g => {
+      const p = S.people[g.pid], pl = purchaseLine(g);
+      return `<div class="card srow"><div class="sthumb" ${g.img ? `style="background-image:url('${esc(g.img).replace(/'/g, '%27')}')"` : ''}>${g.img ? '' : IC.gift}</div>
+        <div class="grow"><div class="gtitle">${esc(g.t)}</div>
+        <div class="meta">Pour <b>${esc(p.name)}</b>, ${giftCost(g) ? eur(giftCost(g)) : 'prix ?'}${g.paid ? ' payé' : ''}</div>
+        ${pl ? `<div class="buyline">${pl}</div>` : ''}
+        <div class="row" style="margin-top:8px">${NEXT[g.status] ? `<button class="btn sm" data-act="next" data-id="${g.id}">${NEXT[g.status]}</button>` : ''}<button class="link" data-act="track" data-id="${g.id}">Détail et historique</button></div></div></div>`;
+    }).join('');
+  });
+  if (ideas) h += `<p class="note">${ideas} idée${ideas > 1 ? 's' : ''} pas encore retenue${ideas > 1 ? 's' : ''} (voir l’onglet Idées).</p>`;
+  return h;
+}
+
+function trackForm(g, preset) {
+  const st = preset || g.status || 'idee', bought = sidx(st) >= 2, p = S.people[g.pid];
+  const buyers = isPriv(g.pid) ? [p.owner] : USERS;
+  const hist = (g.log || []).slice().reverse();
+  return `<form data-form="track" data-id="${g.id}"><h2>Suivi du cadeau</h2>
+  <p class="sub" style="margin:-10px 0 16px"><b>${esc(g.t)}</b>${p ? ` pour ${esc(p.name)}` : ''}</p>
+  <div class="sub" style="font-weight:500;margin-bottom:8px">Où en est ce cadeau ?</div>
+  <div class="chips">${ORDER.map(k => `<label class="chip"><input type="radio" name="status" value="${k}" ${k === st ? 'checked' : ''}>${STATUS[k]}</label>`).join('')}</div>
+  <div class="row2"><label>Acheté par<select name="buyer"><option value="">—</option>${buyers.map(u => `<option ${(g.buyer || (bought ? me : '')) === u ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select></label>
+  <label>Date d’achat<input type="date" name="bdate" value="${esc(g.bdate || (bought ? today() : ''))}"></label></div>
+  <label>Montant total payé (€)<input type="number" name="paid" min="0" step="0.01" inputmode="decimal" value="${g.paid != null && g.paid !== '' ? g.paid : ''}" placeholder="${g.price != null && g.price !== '' ? g.price : ''}"></label>
+  <label>Où l’as-tu acheté ?<input name="store" maxlength="80" value="${esc(g.store || '')}" placeholder="Fnac, Amazon, boutique du centre-ville…"></label>
+  <label>N° de commande ou de suivi du colis (facultatif)<input name="order" maxlength="60" value="${esc(g.order || '')}"></label>
+  ${hist.length ? `<div class="sub" style="font-weight:500;margin:4px 0 4px">Historique</div><ul class="hist">${hist.map(l => `<li><b style="color:var(--ink)">${STATUS[l.s] || esc(l.s)}</b>, ${esc(l.by || '')}, ${fmtDT(l.at)}</li>`).join('')}</ul>` : ''}
+  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div></form>`;
+}
+function setStatus(id, st, extra) {
+  const g = S.gifts[id], log = (g.log || []).slice();
+  if (g.status !== st) log.push({ s: st, by: me, at: Date.now() });
+  const upd = Object.assign({ status: st, log }, extra || {});
+  if (sidx(st) >= 2) { upd.buyer = upd.buyer || g.buyer || me; upd.bdate = upd.bdate || g.bdate || today(); }
+  put('gifts', id, upd);
+}
+
+/* ---- Détail personne ---- */
+function personView() {
+  const p = S.people[cur];
+  if (!personOk(cur)) { view = 'home'; return homeView(); }
+  const o = other(me), mb = budgetOf(cur, me), ob = budgetOf(cur, o), bt = budgetTotal(cur), ch = chosenTotal(cur), priv = isPriv(cur);
+  const rank = { choisi: 0, achete: 1, recupere: 2, idee: 3, offert: 4 };
+  const gs = giftsOf(cur).sort((a, b) => (rank[a.status] - rank[b.status]) || b.u - a.u);
+  return `<div class="row between"><button class="btn ghost sm" data-act="nav" data-v="home">← Retour</button><div><button class="link" data-act="editPerson" data-id="${cur}">Modifier</button><button class="link" data-act="delPerson" data-id="${cur}">Supprimer</button></div></div>
+  <h2 style="margin-top:14px">${esc(p.name)}${priv ? ` <span class="badge lock" style="font-size:13px;vertical-align:middle">${IC.lock}Personnel</span>` : ''}</h2>
+  ${priv ? `<p class="note" style="margin-top:-8px">Cadeau personnel : il reste uniquement sur cet appareil, ${esc(o)} ne le voit jamais.</p>` : ''}
+  <div class="card paper">
+    <div class="row" style="align-items:flex-end">
+      <label class="grow" style="margin:0">Mon budget (${esc(me)})<input type="number" min="0" step="1" inputmode="decimal" placeholder="€" value="${mb == null ? '' : mb}" data-bud="${cur}"></label>
+      ${priv ? '' : `<div class="grow"><div class="sub">Budget de ${esc(o)}</div><div class="gprice" style="font-size:18px">${ob == null ? 'pas encore défini' : eur(ob)}</div></div>`}
+    </div>
+    <div class="bar"><i class="${ch > bt && bt ? 'over' : ''}" style="width:${bt ? Math.min(100, ch / bt * 100) : 0}%"></i></div>
+    <div class="pmeta">Retenu <b>${eur(ch)}</b> sur <b>${bt ? eur(bt) : '—'}</b>${bt ? `, il reste <b>${eur(bt - ch)}</b>` : ''}</div>
+  </div>
+  <div class="row between" style="margin:20px 0 12px"><h3 style="margin:0">Idées de cadeaux</h3><button class="btn" data-act="addGift" data-id="${cur}">Proposer un cadeau</button></div>
+  ${gs.length ? `<div class="grid">${gs.map(g => giftCard(g, false)).join('')}</div>` : `<div class="empty">${IC.idea}<div>Aucune idée pour l’instant. Propose la première.</div></div>`}`;
+}
+
+/* ---- Toutes les idées ---- */
+function ideasView() {
+  const people = peopleList().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  const gs = live('gifts').filter(g => personOk(g.pid) && (!fPerson || g.pid === fPerson) && (!fStatus || g.status === fStatus)).sort((a, b) => b.u - a.u);
+  return `<div class="row between"><h2 style="margin:0">Toutes les idées</h2><button class="btn" data-act="addGift" data-id="">Proposer un cadeau</button></div>
+  <div class="row" style="margin:14px 0"><select data-filter="p" class="grow" style="background:var(--paper);color:var(--ink)"><option value="">Toutes les personnes</option>${people.map(p => `<option value="${p.id}" ${fPerson === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
+  <select data-filter="s" class="grow" style="background:var(--paper);color:var(--ink)"><option value="">Tous les statuts</option>${Object.entries(STATUS).map(([k, l]) => `<option value="${k}" ${fStatus === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+  ${gs.length ? `<div class="grid">${gs.map(g => giftCard(g, true)).join('')}</div>` : `<div class="empty">${IC.idea}<div>Aucune idée ne correspond à ces filtres.</div></div>`}`;
+}
+
+/* ---- Budgets ---- */
+function budgetsView() {
+  const people = peopleList().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  const o = other(me);
+  if (!people.length) return `<h2>Budgets</h2><div class="empty">${IC.euro}<div>Ajoute d’abord une personne.</div></div>`;
+  const totMe = people.reduce((s, p) => s + (budgetOf(p.id, me) || 0), 0), totO = people.reduce((s, p) => s + (budgetOf(p.id, o) || 0), 0);
+  return `<h2>Budgets</h2>
+  <p class="note">Indique ce que <b>tu</b> peux mettre pour chacun. Le budget de ${esc(o)} apparaît après synchronisation. La part de chacun sur les cadeaux se calcule ensuite toute seule.</p>
+  <div class="card paper"><table class="table"><thead><tr><th>Pour</th><th>Moi (${esc(me)})</th><th>${esc(o)}</th><th>Total</th><th>Retenu</th></tr></thead><tbody>
+  ${people.map(p => {
+    const bt = budgetTotal(p.id), ch = chosenTotal(p.id);
+    return `<tr><td><b>${esc(p.name)}</b>${p.scope === 'private' ? ` <span class="badge lock">${IC.lock}</span>` : ''}</td>
+      <td><input class="num" type="number" min="0" step="1" inputmode="decimal" placeholder="€" value="${budgetOf(p.id, me) == null ? '' : budgetOf(p.id, me)}" data-bud="${p.id}"></td>
+      <td>${p.scope === 'private' || budgetOf(p.id, o) == null ? '<span class="sub">—</span>' : eur(budgetOf(p.id, o))}</td>
+      <td><b>${bt ? eur(bt) : '—'}</b></td>
+      <td><span class="badge ${bt && ch > bt ? 'bad' : ch ? 'ok' : ''}">${eur(ch)}</span></td></tr>`;
+  }).join('')}
+  </tbody><tfoot><tr><td><b>Total</b></td><td><b>${eur(totMe)}</b></td><td><b>${eur(totO)}</b></td><td><b>${eur(totMe + totO)}</b></td><td><b>${eur(people.reduce((s, p) => s + chosenTotal(p.id), 0))}</b></td></tr></tfoot></table></div>`;
+}
+
+/* ---- Paiements : parts calculées automatiquement ---- */
+function payView() {
+  const gs = live('gifts').filter(g => personOk(g.pid) && !isPriv(g.pid) && g.status !== 'idee');
+  let h = `<h2>Qui paye quoi</h2>`;
+  if (!gs.length) return h + `<div class="empty">${IC.pay}<div>Passe un cadeau partagé en « Retenu » ou « Acheté » : la part de chacun se calcule toute seule. Les cadeaux personnels ne sont pas concernés.</div></div>`;
+  const SH = computeShares();
+  const due = { Johann: 0, Elsa: 0 }, paid = { Johann: 0, Elsa: 0 }, owes = { Johann: 0, Elsa: 0 };
+  gs.forEach(g => USERS.forEach(u => {
+    const a = (SH[g.id] || {})[u] || 0, s = shareOf(g.id, u); due[u] += a;
+    if (g.buyer === u || (s && s.paid)) paid[u] += a; else if (g.buyer && g.buyer !== u) owes[u] += a;
+  }));
+  const net = owes.Elsa - owes.Johann;
+  h += `<div class="stats" style="margin-bottom:16px">${USERS.map(u => `<div class="stat"><b>${eur(due[u])}</b><span>${u}${u === me ? ' (moi)' : ''}, reste ${eur(due[u] - paid[u])}</span></div>`).join('')}</div>`;
+  if (Math.abs(net) > 0.005) h += `<div class="balance">${net > 0 ? 'Elsa doit' : 'Johann doit'} ${eur(Math.abs(net))} ${net > 0 ? 'à Johann' : 'à Elsa'}</div>`;
+  h += `<p class="note">Chaque part est calculée automatiquement : moitié-moitié, ajustée au budget de chacun pour la personne concernée.</p>`;
+  const byP = {}; gs.forEach(g => (byP[g.pid] = byP[g.pid] || []).push(g));
+  Object.keys(byP).sort((a, b) => S.people[a].name.localeCompare(S.people[b].name, 'fr')).forEach(pid => {
+    h += `<h3>${esc(S.people[pid].name)}</h3>`;
+    byP[pid].forEach(g => {
+      const P = giftCost(g), sh = SH[g.id] || { Johann: 0, Elsa: 0, short: 0 };
+      const st = !P ? ['warn', 'Prix à renseigner'] : sh.short > 0.01 ? ['bad', `Il manque ${eur(sh.short)}`] : sh.short < -0.01 ? ['bad', `Dépassé de ${eur(-sh.short)}`] : ['ok', 'Réparti'];
+      h += `<div class="card paper">
+        <div class="row between" style="flex-wrap:nowrap;align-items:flex-start"><div><div class="gtitle">${esc(g.t)}</div><div class="sub">${P ? eur(P) : 'Prix ?'}${g.paid ? ' payé' : ''}${g.store ? ' chez ' + esc(g.store) : ''}, ${STATUS[g.status].toLowerCase()}</div></div><span class="badge ${st[0]}">${st[1]}</span></div>
+        <label style="margin:12px 0 6px">Qui avance l’achat ?<select data-buyer="${g.id}"><option value="">Pas encore décidé</option>${USERS.map(u => `<option ${g.buyer === u ? 'selected' : ''}>${u}</option>`).join('')}</select></label>
+        ${USERS.map(u => {
+          const s = shareOf(g.id, u), b = budgetOf(g.pid, u);
+          return `<div class="share-row"><div><b>${u}${u === me ? ' (moi)' : ''}</b><div class="sub">budget ${b == null ? 'non défini' : eur(b)}</div></div>
+            ${g.manual ? `<input type="number" min="0" step="0.01" inputmode="decimal" value="${sh[u]}" data-share="${g.id}|${u}">` : `<span class="amt">${eur(sh[u])}</span>`}
+            <label>${g.buyer === u ? '<span class="badge ok">avancé</span>' : `<input type="checkbox" data-paid="${g.id}|${u}" ${s && s.paid ? 'checked' : ''}> payé`}</label></div>`;
+        }).join('')}
+        <div class="actions">${g.manual ? `<button class="btn sec sm" data-act="manualOff" data-id="${g.id}">Revenir au calcul automatique</button>` : `<button class="link" data-act="manualOn" data-id="${g.id}">Ajuster à la main</button>`}</div></div>`;
+    });
+  });
+  return h;
+}
+
+/* ---- Plus ---- */
+function moreView() {
+  const open = live('tickets').filter(t => t.status !== 'resolu').length;
+  return `<h2>Plus</h2>
+  <button class="card pcard" data-act="nav" data-v="tickets"><div class="thumbs"><i>${IC.ticket}</i></div><div class="grow"><div class="pname">Tickets</div><div class="pmeta">Signaler un problème ou proposer une amélioration${open ? `, ${open} ouvert${open > 1 ? 's' : ''}` : ''}</div></div></button>
+  <button class="card pcard" data-act="nav" data-v="sync"><div class="thumbs"><i>${IC.sync}</i></div><div class="grow"><div class="pname">Synchronisation</div><div class="pmeta">${SYNC_LABEL[syncState]}, partage avec l’autre personne et sauvegardes</div></div></button>`;
+}
+
+/* ---- Tickets ---- */
+const TSTATUS = { ouvert: 'Ouvert', encours: 'En cours', resolu: 'Résolu' };
+const TTYPE = { bug: 'Problème', idee: 'Suggestion' };
+let fTicket = 'open';
+function ticketsView() {
+  const all = live('tickets').sort((a, b) => ((a.status === 'resolu') - (b.status === 'resolu')) || (b.c || 0) - (a.c || 0));
+  const list = all.filter(t => fTicket === 'all' || (fTicket === 'open' ? t.status !== 'resolu' : t.status === 'resolu'));
+  const nOpen = all.filter(t => t.status !== 'resolu').length;
+  return `<div class="row between"><button class="btn ghost sm" data-act="nav" data-v="more">← Retour</button><button class="btn" data-act="addTicket">Nouveau ticket</button></div>
+  <h2 style="margin-top:14px">Tickets</h2>
+  <p class="note" style="margin-top:-8px">Un problème, une idée pour améliorer Super Cadeau ? Note-le ici, l’autre le voit aussi.</p>
+  <div class="fchips">${[['open', `Ouverts (${nOpen})`], ['done', 'Résolus'], ['all', 'Tous']].map(([k, l]) => `<button class="${fTicket === k ? 'on' : ''}" data-act="tfilter" data-v="${k}">${l}</button>`).join('')}</div>
+  ${list.length ? list.map(t => `<div class="card tk">
+    <div class="tkhead"><span class="badge ${t.type === 'bug' ? 'bad' : 'ok'}">${TTYPE[t.type] || 'Ticket'}</span><span class="sub">par ${esc(t.by || '?')}, ${t.c ? fmtDT(t.c) : ''}</span></div>
+    <div class="gtitle">${esc(t.t)}</div>
+    ${t.desc ? `<div class="tkdesc">${esc(t.desc)}</div>` : ''}
+    <div class="gact"><div class="seg">${Object.entries(TSTATUS).map(([k, l]) => `<button class="${(t.status || 'ouvert') === k ? 'on' : ''}" data-act="tstatus" data-id="${t.id}" data-v="${k}">${l}</button>`).join('')}</div>
+    <span style="margin-left:auto"><button class="link" data-act="editTicket" data-id="${t.id}">Modifier</button><button class="link" data-act="delTicket" data-id="${t.id}">Supprimer</button></span></div></div>`).join('')
+  : `<div class="empty">${IC.ticket}<div>${all.length ? 'Aucun ticket dans cette liste.' : 'Aucun ticket pour l’instant. Un bug, une idée ? Crée le premier.'}</div></div>`}
+  ${nOpen ? `<div style="text-align:center;margin-top:6px"><button class="link" data-act="copyTickets">Copier les tickets ouverts (à envoyer pour correction)</button></div>` : ''}`;
+}
+function ticketForm(t) {
+  t = t || {};
+  return `<form data-form="ticket" data-id="${t.id || ''}"><h2>${t.id ? 'Modifier le ticket' : 'Nouveau ticket'}</h2>
+  <div class="sub" style="font-weight:500;margin-bottom:8px">De quoi s’agit-il ?</div>
+  <div class="chips"><label class="chip"><input type="radio" name="type" value="bug" ${(t.type || 'bug') === 'bug' ? 'checked' : ''}>Un problème</label><label class="chip"><input type="radio" name="type" value="idee" ${t.type === 'idee' ? 'checked' : ''}>Une suggestion</label></div>
+  <label>Titre<input name="t" required maxlength="120" value="${esc(t.t || '')}" placeholder="Ex. Le prix ne se met pas à jour"></label>
+  <label>Détails<textarea name="desc" rows="4" maxlength="1500" placeholder="Que s’est-il passé ? Sur quel écran ? Qu’attendais-tu ?">${esc(t.desc || '')}</textarea></label>
+  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div></form>`;
+}
+
+/* ---- Synchro ---- */
+function syncView() {
+  const fmt = d => d ? d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+  const auto = syncUrl ? `<div class="card">
+    <div class="row" style="margin-bottom:6px"><span id="syncdot2" class="sync s-${syncState}" style="background:${syncState === 'ok' ? '#1E9E64' : syncState === 'err' ? '#E5484D' : '#F3C65B'};box-shadow:none"></span><b id="synctxt">${SYNC_LABEL[syncState]}</b></div>
+    ${syncState === 'err' && syncErrMsg ? `<p class="sub" style="color:var(--bad);margin:0 0 8px">${esc(syncErrMsg)}</p>` : ''}
+    <p class="sub" style="margin:0 0 12px">Tout ce que vous ajoutez ou modifiez, l’un comme l’autre, apparaît chez l’autre en quelques secondes. ${syncAt ? `Dernière synchro à ${fmt(syncAt)}.` : ''}</p>
+    <div class="row"><button class="btn" data-act="syncNow">Synchroniser maintenant</button><button class="btn sec" data-act="copyUrl">Copier l’adresse à envoyer à l’autre</button><button class="link" data-act="syncOff">Déconnecter</button></div></div>`
+  : `<div class="card"><h3 style="margin-top:0">Activer la synchronisation automatique</h3>
+    <p class="sub" style="margin-top:0">À faire une seule fois, par une seule personne (2 minutes). L’autre n’aura qu’à coller l’adresse obtenue.</p>
+    <ol class="steps">
+      <li>Va sur <b>script.google.com</b> et clique sur <b>Nouveau projet</b>.</li>
+      <li>Supprime le code existant, colle le script (bouton ci-dessous) et enregistre. Une feuille Google « Super Cadeau - données » sera créée toute seule dans ton Drive.</li>
+      <li><b>Déployer › Nouveau déploiement</b>, type <b>Application Web</b> : exécuter en tant que <b>Moi</b>, accès pour <b>Tout le monde</b>. Autorise l’accès quand Google le demande (« Paramètres avancés », puis « Accéder au projet »).</li>
+      <li>Copie l’<b>URL de l’application Web</b> (elle finit par <b>/exec</b>) et colle-la ci-dessous.</li>
+    </ol>
+    <button class="btn sec" data-act="copyGas" style="margin-bottom:14px">Copier le script</button>
+    <label>Adresse de l’application Web<input id="syncurl" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec"></label>
+    <button class="btn block" data-act="syncConnect">Connecter</button></div>`;
+  const hosted = /^https?:$/.test(location.protocol);
+  const share = `<div class="card"><h3 style="margin-top:0">Partager l’application avec l’autre personne</h3>
+    ${syncUrl && hosted ? `<p class="sub" style="margin-top:0">Envoie ce lien : en l’ouvrant, la synchronisation est activée toute seule, sans rien coller.</p><button class="btn" data-act="copyInvite">Copier le lien d’invitation</button>` : `<p class="sub" style="margin-top:0">Le plus simple : héberger le fichier gratuitement pour obtenir un lien (par exemple avec Netlify Drop : app.netlify.com/drop, en déposant un dossier contenant le fichier renommé <b>index.html</b>). Ouvre ensuite ce lien ici, puis reviens sur cet écran : un bouton « Copier le lien d’invitation » apparaîtra.</p><p class="sub" style="margin-bottom:0">Sinon : envoie-lui le fichier super-cadeau.html et l’adresse de synchro (bouton « Copier l’adresse » ci-dessus). Elle ouvre le fichier avec Chrome et colle l’adresse dans Plus › Synchronisation.</p>`}</div>`;
+  return `<div><button class="btn ghost sm" data-act="nav" data-v="more">← Retour</button></div><h2 style="margin-top:14px">Synchronisation</h2>${auto}${share}
+  <div class="card"><h3 style="margin-top:0">Sauvegarde manuelle</h3>
+    <p class="sub" style="margin-top:0">Facultatif. Le fichier et le code ne contiennent jamais tes cadeaux personnels ; seule la sauvegarde complète les inclut (à garder pour toi).</p>
+    <div class="row" style="margin-bottom:12px"><button class="btn sec" data-act="exportFile">Télécharger le fichier</button><button class="btn sec" data-act="exportFile" data-full="1">Sauvegarde complète (avec mes cadeaux personnels)</button><button class="btn sec" data-act="copyCode">Copier le code</button><button class="btn sec" data-act="pickFile">Importer un fichier</button><input type="file" id="file" accept=".json,.txt,application/json,text/plain" hidden></div>
+    <label>Ou colle un code ici<textarea class="code" id="codein" placeholder="Colle ici un code"></textarea></label>
+    <button class="btn block" data-act="importCode">Fusionner</button></div>
+  <div class="card"><h3 style="margin-top:0">Zone sensible</h3><p class="sub" style="margin-top:0">Les données sont aussi enregistrées dans ce navigateur.</p><button class="btn danger sm" data-act="resetAll">Tout effacer sur cet appareil</button></div>`;
+}
+
+/* ================= Formulaires ================= */
+function personForm(p) {
+  p = p || {};
+  return `<form data-form="person" data-id="${p.id || ''}"><h2>${p.id ? 'Modifier' : 'Nouvelle personne'}</h2>
+  <label>Prénom ou nom<input name="name" required maxlength="60" value="${esc(p.name || '')}" placeholder="Maman, Tonton Alex…"></label>
+  ${p.id ? `<p class="sub" style="margin:0 0 6px">${p.scope === 'private' ? 'Cadeau personnel : visible uniquement sur cet appareil.' : `Cadeau partagé avec ${esc(other(me))}.`}</p>` : `<div style="margin-bottom:6px"><div class="sub" style="margin-bottom:6px;font-weight:500">Pour quel type de cadeau ?</div>
+    <label class="opt"><input type="radio" name="scope" value="shared" checked><span><b>Cadeau partagé avec ${esc(other(me))}</b><small>Apparaît chez ${esc(other(me))}, vous organisez le cadeau et le budget ensemble.</small></span></label>
+    <label class="opt"><input type="radio" name="scope" value="private"><span><b>Cadeau personnel</b><small>Reste sur cet appareil. ${esc(other(me))} ne le voit jamais.</small></span></label></div>`}
+  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div></form>`;
+}
+function giftForm(g, pid) {
+  g = g || {};
+  const people = peopleList().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  if (!people.length) return `<h2>Ajoute d’abord une personne</h2><div class="actions"><button class="btn" data-act="closeModal">OK</button></div>`;
+  const sel = g.pid || pid || people[0].id;
+  return `<form data-form="gift" data-id="${g.id || ''}"><h2>${g.id ? 'Modifier le cadeau' : 'Proposer un cadeau'}</h2>
+  <label>Pour qui<select name="pid" required>${people.map(p => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
+  <label>Idée<input name="t" required maxlength="120" value="${esc(g.t || '')}" placeholder="Ex. Casque audio"></label>
+  <div class="row2"><label>Prix (€)<input name="price" type="number" min="0" step="0.01" inputmode="decimal" value="${g.price == null ? '' : g.price}"></label>
+  <label>Statut<select name="status">${Object.entries(STATUS).map(([k, l]) => `<option value="${k}" ${(g.status || 'idee') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+  <label>Lien du produit<span class="inl"><input name="url" type="url" inputmode="url" placeholder="https://…" value="${esc(g.url || '')}"><button type="button" class="btn sec" data-act="preview">Aperçu</button></span></label>
+  <label>Image (adresse remplie automatiquement depuis le lien)<input name="img" type="url" placeholder="https://…/image.jpg" value="${esc(g.img || '')}"></label>
+  <div class="pv" id="pv">${g.img ? `<img src="${esc(g.img)}" alt="" referrerpolicy="no-referrer">` : ''}</div>
+  <label>Note<textarea name="note" rows="2" maxlength="300" placeholder="Taille, couleur, magasin…">${esc(g.note || '')}</textarea></label>
+  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div></form>`;
+}
+async function runPreview(force) {
+  const f = $('#sheet form[data-form="gift"]'); if (!f) return;
+  const url = f.elements.url.value.trim(), pv = $('#pv');
+  if (!url) { pv.textContent = 'Colle d’abord un lien.'; return; }
+  pv.textContent = 'Recherche de l’image…';
+  const r = await fetchPreview(url);
+  if (!$('#sheet form[data-form="gift"]')) return;
+  if (!r || !r.img) { pv.textContent = 'Aucune image trouvée automatiquement (site protégé ?). Colle l’adresse d’une image dans le champ ci-dessus.'; if (r && r.title && !f.elements.t.value) f.elements.t.value = r.title.slice(0, 120); return; }
+  if (force || !f.elements.img.value) f.elements.img.value = r.img;
+  if (r.title && !f.elements.t.value) f.elements.t.value = r.title.slice(0, 120);
+  if (r.price && !f.elements.price.value && !isNaN(parseFloat(r.price))) f.elements.price.value = parseFloat(r.price);
+  showPv();
+}
+function showPv() {
+  const f = $('#sheet form[data-form="gift"]'); if (!f) return;
+  const u = f.elements.img.value.trim(), pv = $('#pv');
+  pv.innerHTML = u ? `Aperçu :<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent='Cette image ne peut pas être affichée.'">` : '';
+}
+
+/* ================= Synchro (export / import / fusion) ================= */
+const encode = () => btoa(unescape(encodeURIComponent(JSON.stringify(sharedState()))));
+function parseIncoming(txt) {
+  txt = (txt || '').trim(); if (!txt) throw new Error('vide');
+  let o; try { o = JSON.parse(txt); } catch (e) { o = JSON.parse(decodeURIComponent(escape(atob(txt)))); }
+  if (!o || typeof o !== 'object' || !o.people) throw new Error('format');
+  return o;
+}
+function merge(inc) {
+  let n = 0;
+  const take = (c, k, rec) => { const cur = S[c][k]; if (rec && typeof rec === 'object' && (!cur || (rec.u || 0) > (cur.u || 0))) { S[c][k] = rec; n++; } };
+  COLL.forEach(c => { const m = inc[c] || {}; Object.keys(m).forEach(k => { if (c === 'likes' && k.indexOf('ticket|') === 0) take('tickets', k.slice(7), m[k]); else take(c, k, m[k]); }); });
+  Object.keys(inc.tickets || {}).forEach(k => take('tickets', k, inc.tickets[k]));
+  persist(); return n;
+}
+function doImport(txt) {
+  try { const n = merge(parseIncoming(txt)); scheduleSync(); toast(n ? `${n} élément${n > 1 ? 's' : ''} fusionné${n > 1 ? 's' : ''}` : 'Déjà à jour'); render(); }
+  catch (e) { toast('Code ou fichier invalide'); }
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; } catch (e) {
+    const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e2) {} ta.remove(); return ok;
+  }
+}
+const fileName = (full) => `super-cadeau${full ? '-complet' : ''}-${(me || 'moi').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.json`;
+
+/* ================= Actions ================= */
+const actions = {
+  who(t) { me = t.dataset.v; try { localStorage.setItem('cadeaux.me', me); } catch (e) {} view = 'home'; render(); },
+  switch() { me = null; render(); },
+  nav(t) { view = t.dataset.v; cur = null; render(); window.scrollTo(0, 0); },
+  open(t) { view = 'person'; cur = t.dataset.id; render(); window.scrollTo(0, 0); },
+  closeModal: closeModal,
+  doConfirm() { const f = pendingConfirm; pendingConfirm = null; closeModal(); f && f(); },
+  addPerson() { openModal(personForm()); },
+  editPerson(t) { openModal(personForm(Object.assign({ id: t.dataset.id }, S.people[t.dataset.id]))); },
+  delPerson(t) { const id = t.dataset.id; confirmDlg(`Supprimer « ${S.people[id].name} » et ses idées ?`, () => { del('people', id); live('gifts').filter(g => g.pid === id).forEach(g => del('gifts', g.id)); view = 'home'; cur = null; render(); }); },
+  addGift(t) { openModal(giftForm(null, t.dataset.id)); },
+  editGift(t) { openModal(giftForm(Object.assign({ id: t.dataset.id }, S.gifts[t.dataset.id]))); },
+  delGift(t) { const id = t.dataset.id; confirmDlg(`Supprimer « ${S.gifts[id].t} » ?`, () => { del('gifts', id); render(); }); },
+  status(t) { setStatus(t.dataset.id, t.dataset.v); render(); },
+  track(t) { openModal(trackForm(Object.assign({ id: t.dataset.id }, S.gifts[t.dataset.id]))); },
+  next(t) {
+    const id = t.dataset.id, g = S.gifts[id], n = ORDER[sidx(g.status) + 1]; if (!n) return;
+    if (n === 'achete') { openModal(trackForm(Object.assign({ id }, g), 'achete')); return; }
+    setStatus(id, n); render(); toast(`${g.t} : ${STATUS[n].toLowerCase()}`);
+  },
+  like(t) { put('likes', t.dataset.id + '|' + me, { v: !likedBy(t.dataset.id, me) }); render(); },
+  preview() { runPreview(true); },
+  manualOn(t) { const id = t.dataset.id, sh = computeShares()[id] || {}; USERS.forEach(u => put('shares', id + '|' + u, { a: sh[u] || 0 })); put('gifts', id, { manual: true }); render(); },
+  manualOff(t) { put('gifts', t.dataset.id, { manual: false }); render(); },
+  syncConnect() {
+    const u = ($('#syncurl').value || '').trim();
+    if (!/^https:\/\/script\.google\.com\/.+\/exec/.test(u)) { toast('Adresse invalide : elle doit finir par /exec'); return; }
+    syncUrl = u; try { localStorage.setItem(SYNC_KEY, u); } catch (e) {}
+    setSync('busy'); render(); syncNow(true);
+  },
+  syncNow() { syncNow(true); },
+  async copyInvite() { toast(await copyText(location.origin + location.pathname + '#sync=' + encodeURIComponent(syncUrl)) ? 'Lien copié, envoie-le à l’autre' : 'Copie impossible'); },
+  addTicket() { openModal(ticketForm()); },
+  editTicket(t) { openModal(ticketForm(Object.assign({ id: t.dataset.id }, S.tickets[t.dataset.id]))); },
+  delTicket(t) { const id = t.dataset.id; confirmDlg(`Supprimer le ticket « ${S.tickets[id].t} » ?`, () => { del('tickets', id); render(); }); },
+  tstatus(t) { put('tickets', t.dataset.id, { status: t.dataset.v }); render(); },
+  tfilter(t) { fTicket = t.dataset.v; render(); },
+  async copyTickets() {
+    const txt = 'Tickets ouverts, Super Cadeau\n' + live('tickets').filter(t => t.status !== 'resolu').map(t => `- [${TTYPE[t.type] || 'Ticket'}] ${t.t}${t.desc ? ' : ' + t.desc.replace(/\s+/g, ' ') : ''} (par ${t.by}, ${t.c ? fmtDT(t.c) : ''}, ${TSTATUS[t.status || 'ouvert']})`).join('\n');
+    toast(await copyText(txt) ? 'Tickets copiés' : 'Copie impossible');
+  },
+  syncOff() { confirmDlg('Arrêter la synchronisation automatique sur cet appareil ?', () => { syncUrl = ''; try { localStorage.removeItem(SYNC_KEY); } catch (e) {} setSync('off'); render(); }, 'Déconnecter'); },
+  async copyUrl() { toast(await copyText(syncUrl) ? 'Adresse copiée, envoie-la à l’autre' : 'Copie impossible'); },
+  async copyGas() { toast(await copyText(GAS_CODE) ? 'Script copié' : 'Copie impossible'); },
+  exportFile(t) {
+    const full = !!(t && t.dataset && t.dataset.full);
+    const blob = new Blob([JSON.stringify(full ? S : sharedState())], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fileName(full); document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000); toast('Fichier téléchargé');
+  },
+  async copyCode() { toast(await copyText(encode()) ? 'Code copié, envoie-le à l’autre' : 'Copie impossible'); },
+  async shareCode() {
+    try {
+      const file = new File([JSON.stringify(sharedState())], fileName(), { type: 'application/json' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Super Cadeau' }); return; }
+      if (navigator.share) { await navigator.share({ title: 'Super Cadeau', text: encode() }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    toast(await copyText(encode()) ? 'Partage indisponible : code copié' : 'Partage impossible');
+  },
+  pickFile() { $('#file').click(); },
+  importCode() { doImport($('#codein').value); },
+  resetAll() { confirmDlg('Effacer toutes les données de cet appareil ?', () => { S = emptyS(); save(); render(); toast('Données effacées'); }, 'Tout effacer'); }
+};
+document.addEventListener('click', e => {
+  if (e.target.id === 'modal') return closeModal();
+  const t = e.target.closest('[data-act]'); if (!t) return;
+  const f = actions[t.dataset.act]; if (f) f(t);
+});
+document.addEventListener('submit', e => {
+  const f = e.target.closest('form[data-form]'); if (!f) return; e.preventDefault();
+  const id = f.dataset.id || uid(), isNew = !f.dataset.id, E = f.elements;
+  if (f.dataset.form === 'ticket') {
+    const old = S.tickets[id] || {};
+    put('tickets', id, { type: E.type.value, t: E.t.value.trim(), desc: E.desc.value.trim(), by: old.by || me, status: old.status || 'ouvert', c: old.c || Date.now() });
+    closeModal(); render(); toast(isNew ? 'Ticket créé, l’autre le verra' : 'Ticket modifié');
+  } else if (f.dataset.form === 'track') {
+    const pd = E.paid.value.trim();
+    setStatus(id, E.status.value, { buyer: E.buyer.value, bdate: E.bdate.value, paid: pd === '' ? null : Math.max(0, parseFloat(pd) || 0), store: E.store.value.trim(), order: E.order.value.trim() });
+    closeModal(); render(); toast('Suivi enregistré');
+  } else if (f.dataset.form === 'person') {
+    const old = S.people[id] || {}, scope = isNew ? (E.scope.value || 'shared') : (old.scope || 'shared');
+    put('people', id, scope === 'private' ? { name: E.name.value.trim(), scope, owner: old.owner || me } : { name: E.name.value.trim(), scope });
+    closeModal(); render(); if (isNew) toast(scope === 'private' ? 'Personne ajoutée, uniquement sur cet appareil' : 'Personne ajoutée, visible par ' + other(me));
+  } else {
+    const p = E.price.value, old = S.gifts[id] || {};
+    const st = E.status.value, log = (old.log || []).slice(); if (old.status !== st) log.push({ s: st, by: me, at: Date.now() });
+    const rec = { pid: E.pid.value, t: E.t.value.trim(), price: p === '' ? null : parseFloat(p), status: st, log, url: E.url.value.trim(), img: E.img.value.trim(), note: E.note.value.trim(), by: old.by || me, c: old.c || Date.now() };
+    if (sidx(st) >= 2) { rec.buyer = old.buyer || me; rec.bdate = old.bdate || today(); }
+    put('gifts', id, rec);
+    closeModal(); render(); toast(isNew ? 'Idée ajoutée' : 'Cadeau modifié');
+  }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.bud) { const v = t.value.trim(); put('budgets', t.dataset.bud + '|' + me, { a: v === '' ? null : Math.max(0, parseFloat(v) || 0) }); render(); }
+  else if (t.dataset.share) { const v = t.value.trim(); put('shares', t.dataset.share, { a: v === '' ? 0 : Math.max(0, parseFloat(v) || 0) }); render(); }
+  else if (t.dataset.paid) { put('shares', t.dataset.paid, { paid: t.checked }); render(); }
+  else if (t.dataset.buyer) { put('gifts', t.dataset.buyer, { buyer: t.value }); render(); }
+  else if (t.dataset.filter) { if (t.dataset.filter === 'p') fPerson = t.value; else fStatus = t.value; render(); }
+  else if (t.id === 'file') { const fl = t.files[0]; if (fl) fl.text().then(doImport); t.value = ''; }
+  else if (t.name === 'status' && t.closest('form[data-form="track"]')) { const f = t.form; if (sidx(t.value) >= 2) { if (!f.elements.bdate.value) f.elements.bdate.value = today(); if (!f.elements.buyer.value) f.elements.buyer.value = me; } }
+  else if (t.name === 'img' && t.closest('form[data-form="gift"]')) showPv();
+  else if (t.name === 'url' && t.closest('form[data-form="gift"]')) { const f = t.form; if (t.value.trim() && !f.elements.img.value.trim()) runPreview(false); }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ================= Synchronisation automatique (Google Apps Script) ================= */
+const GAS_CODE = "// Cadeaux Johann & Elsa - serveur de synchronisation (Google Apps Script)\n// \u00c0 coller dans un nouveau projet sur script.google.com (la feuille de donn\u00e9es se cr\u00e9e toute seule).\nvar SHEET_NAME = 'data';\nvar COLLS = ['people', 'gifts', 'budgets', 'shares', 'likes'];\n\nfunction getSpreadsheet_() {\n  // Fonctionne que le script soit li\u00e9 \u00e0 une feuille ou cr\u00e9\u00e9 seul sur script.google.com\n  var ss = SpreadsheetApp.getActiveSpreadsheet();\n  if (ss) return ss;\n  var props = PropertiesService.getScriptProperties();\n  var id = props.getProperty('SHEET_ID');\n  if (id) { try { return SpreadsheetApp.openById(id); } catch (e) {} }\n  ss = SpreadsheetApp.create('Super Cadeau - donn\u00e9es');\n  props.setProperty('SHEET_ID', ss.getId());\n  return ss;\n}\n\nfunction getSheet_() {\n  var ss = getSpreadsheet_();\n  var sh = ss.getSheetByName(SHEET_NAME);\n  if (!sh) { sh = ss.insertSheet(SHEET_NAME); sh.appendRow(['coll', 'id', 'u', 'json']); }\n  return sh;\n}\n\nfunction readAll_(sh) {\n  var rows = sh.getDataRange().getValues();\n  var out = {}, idx = {};\n  COLLS.forEach(function (c) { out[c] = {}; });\n  for (var i = 1; i < rows.length; i++) {\n    var c = rows[i][0], id = rows[i][1], j = rows[i][3];\n    if (!c || !id) continue;\n    try { if (!out[c]) out[c] = {}; out[c][id] = JSON.parse(j); idx[c + '|' + id] = i + 1; } catch (e) {}\n  }\n  return { out: out, idx: idx };\n}\n\nfunction handle_(incoming) {\n  var lock = LockService.getScriptLock();\n  lock.waitLock(20000);\n  try {\n    var sh = getSheet_();\n    var all = readAll_(sh), out = all.out, idx = all.idx;\n    if (incoming) {\n      var upd = [], add = [];\n      COLLS.forEach(function (c) {\n        var m = incoming[c] || {};\n        Object.keys(m).forEach(function (id) {\n          var rec = m[id];\n          if (!rec || typeof rec !== 'object') return;\n          var cur = out[c][id];\n          if (!cur || (rec.u || 0) > (cur.u || 0)) {\n            out[c][id] = rec;\n            var row = [c, id, rec.u || 0, JSON.stringify(rec)], k = c + '|' + id;\n            if (idx[k]) upd.push([idx[k], row]); else add.push(row);\n          }\n        });\n      });\n      upd.forEach(function (x) { sh.getRange(x[0], 1, 1, 4).setValues([x[1]]); });\n      if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, 4).setValues(add);\n    }\n    return { ok: true, data: out, t: Date.now() };\n  } finally {\n    lock.releaseLock();\n  }\n}\n\nfunction reply_(o) {\n  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);\n}\n\nfunction doGet(e) {\n  try { return reply_(handle_(null)); } catch (err) { return reply_({ ok: false, error: String(err) }); }\n}\n\nfunction doPost(e) {\n  try {\n    var body = JSON.parse(e.postData.contents);\n    return reply_(handle_(body && body.data ? body.data : null));\n  } catch (err) { return reply_({ ok: false, error: String(err) }); }\n}\n";
+const SYNC_KEY = 'cadeaux.sync';
+const SYNC_LABEL = { off: 'Synchronisation désactivée', busy: 'Synchronisation…', ok: 'Synchronisé', err: 'Hors ligne ou erreur de synchronisation' };
+let syncErrMsg = '';
+let syncUrl = ''; try { syncUrl = localStorage.getItem(SYNC_KEY) || ''; } catch (e) {}
+let inviteToast = false;
+try {
+  const m = location.hash.match(/^#sync=(.+)$/);
+  if (m) { const u = decodeURIComponent(m[1]); if (/^https:\/\/script\.google\.com\/.+\/exec/.test(u)) { syncUrl = u; localStorage.setItem(SYNC_KEY, u); inviteToast = true; } history.replaceState(null, '', location.pathname + location.search); }
+} catch (e) {}
+let syncState = syncUrl ? 'busy' : 'off', syncAt = null, syncTimer = null, syncBusy = false, syncAgain = false, pendingRender = false;
+function setSync(st) {
+  syncState = st;
+  ['#syncdot', '#syncdot2'].forEach(s => { const d = $(s); if (d) { d.className = 'sync s-' + st; d.title = SYNC_LABEL[st]; } });
+  const t = $('#synctxt'); if (t) t.textContent = SYNC_LABEL[st];
+}
+function maybeRender() {
+  const a = document.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+  if (!$('#modal').hidden || typing) { pendingRender = true; return; }
+  render();
+}
+function scheduleSync() { if (!syncUrl) return; clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(false), 700); }
+async function syncNow(manual) {
+  if (!syncUrl) return;
+  if (syncBusy) { syncAgain = true; return; }
+  syncBusy = true; setSync('busy');
+  try {
+    const r = await fetch(syncUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ data: sharedState() }) });
+    const j = await r.json();
+    if (!j || !j.ok || !j.data) throw new Error((j && j.error) || 'réponse invalide');
+    const n = merge(j.data); syncAt = new Date(); setSync('ok');
+    if (n) maybeRender(); else if (manual) { toast('Connecté, déjà à jour'); if (view === 'sync') render(); }
+  } catch (e) { syncErrMsg = String(e && e.message || e); setSync('err'); if (manual) toast('Synchronisation impossible : ' + syncErrMsg.slice(0, 120)); }
+  syncBusy = false;
+  if (syncAgain) { syncAgain = false; scheduleSync(); }
+}
+async function pollSync() {
+  if (!syncUrl || syncBusy || document.hidden || !$('#modal').hidden) return;
+  syncBusy = true;
+  try {
+    const r = await fetch(syncUrl), j = await r.json();
+    if (!j || !j.ok || !j.data) throw new Error((j && j.error) || 'réponse invalide');
+    const n = merge(j.data); syncAt = new Date(); setSync('ok'); if (n) maybeRender();
+  } catch (e) { setSync('err'); }
+  syncBusy = false;
+}
+setInterval(pollSync, 6000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pollSync(); });
+window.addEventListener('online', () => syncNow(false));
+document.addEventListener('focusout', () => setTimeout(() => { const a = document.activeElement; if (pendingRender && $('#modal').hidden && !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) { pendingRender = false; render(); } }, 150));
+render();
+if (inviteToast) toast('Synchronisation automatique activée');
+if (syncUrl) syncNow(false);
+</script>
+</body>
+</html>
