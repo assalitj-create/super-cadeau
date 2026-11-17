@@ -205,6 +205,9 @@ header.big{position:relative}
 .top h1 small{color:#FFE3DE}
 .chip-user{background:var(--redd);color:#fff;border:0;box-shadow:none;padding:3px 14px 3px 3px;font-weight:800}
 .chip-user i{background:var(--ac);color:#fff;border:2px solid #FFF1D6;font-weight:800}
+.chip-user{font-size:10px;gap:6px;padding:2px 10px 2px 2px}
+.chip-user i{width:19px;height:19px;border-width:1.5px;box-sizing:border-box}
+.chip-user i svg{width:11px;height:11px}
 .sync{border:0;width:12px;height:12px;background:rgba(255,255,255,.5)}
 .sync.s-ok{background:#7DF0B0;box-shadow:none}.sync.s-busy{background:var(--gold)}.sync.s-err{background:#3A0A0A}
 .hero{max-width:880px;margin:0 auto;padding:2px 20px 22px;position:relative;min-height:96px}
@@ -780,7 +783,7 @@ function render() {
   const hero = view === 'person'
       ? `<div class="hero"><div class="hrow"><button class="rb" data-act="nav" data-v="home" aria-label="Retour">${IC.back}</button><span><button class="rb" data-act="editPerson" data-id="${cur}" aria-label="Modifier">${IC.edit}</button><button class="rb" data-act="delPerson" data-id="${cur}" aria-label="Supprimer">${IC.trash}</button></span></div><div class="hname">${esc(S.people[cur].name)}</div><div class="hshare">${shareAvs(S.people[cur])}</div></div>`
       : '';
-  hdr.innerHTML = `<div class="top"><h1>${LOGO_W}Super Cadeau</h1><div class="row" style="gap:12px;flex-wrap:nowrap"><span id="syncdot" class="sync s-${syncState}" title="${SYNC_LABEL[syncState]}"></span><button class="chip-user" data-act="profileForm" aria-label="Mon compte, mes informations"><i>${IC.me}</i>Mon compte</button></div></div>` + hero;
+  hdr.innerHTML = `<div class="top"><h1>${LOGO_W}Super Cadeau</h1><div class="row" style="gap:12px;flex-wrap:nowrap"><button class="chip-user" data-act="profileForm" aria-label="Mon compte, mes informations"><i>${IC.me}</i>Mon compte</button></div></div>` + hero;
   const items = [['home', IC.gift, 'Qui'], ['ideas', IC.idea, 'Quoi'], ['track', IC.track, 'Quand'], ['budgets', IC.euro, 'Combien'], ['pay', IC.pay, 'Quipéquoi'], ['more', IC.more, 'Plus']];
   nav.innerHTML = items.map(([k, i, l]) => `<button data-act="nav" data-v="${k}" class="${(view === k || (view === 'person' && k === 'home') || (k === 'more' && (view === 'tickets' || view === 'sync'))) ? 'on' : ''}">${i}${l}</button>`).join('');
   app.innerHTML = ({ home: homeView, person: personView, ideas: ideasView, track: trackView, budgets: budgetsView, pay: payView, more: moreView, tickets: ticketsView, sync: syncView }[view] || homeView)();
