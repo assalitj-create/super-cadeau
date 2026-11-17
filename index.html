@@ -286,7 +286,7 @@ const IC = {
 };
 
 const LOGO = "<svg aria-hidden='true' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='#C8283A'/><rect x='22' y='52' width='56' height='36' rx='4' fill='none' stroke='#fff' stroke-width='4'/><rect x='16' y='42' width='68' height='12' rx='3' fill='none' stroke='#fff' stroke-width='4'/><line x1='50' y1='42' x2='50' y2='88' stroke='#fff' stroke-width='4'/><polygon points='62,8 36,48 49,48 40,80 72,36 57,36 66,8' fill='#F3C65B' stroke='#C8283A' stroke-width='3' stroke-linejoin='round'/></svg>";
-const emptyS = () => ({ people: {}, gifts: {}, budgets: {}, shares: {}, likes: {}, tickets: {} });
+const emptyS = () => ({ people: {}, gifts: {}, budgets: {}, shares: {}, likes: {}, tickets: {}, auth: {} });
 let S = emptyS(), me = null;
 try {
   const raw = JSON.parse(localStorage.getItem('cadeaux.v1') || 'null');
@@ -294,6 +294,9 @@ try {
   me = localStorage.getItem('cadeaux.me');
   if (!USERS.includes(me)) me = null;
 } catch (e) {}
+let TOK = '', pending = null, syncedOnce = false, shownMode = '';
+try { TOK = localStorage.getItem('cadeaux.tok') || ''; } catch (e) {}
+if (me) { const a0 = S.auth && S.auth[me]; if (!(TOK && (!a0 || a0.h === TOK))) { pending = me; me = null; } }
 const persist = () => { try { localStorage.setItem('cadeaux.v1', JSON.stringify(S)); } catch (e) {} };
 const save = () => { persist(); if (typeof scheduleSync === 'function') scheduleSync(); };
 function put(coll, id, obj) { S[coll][id] = Object.assign({}, S[coll][id] || {}, obj, { u: Date.now() }); delete S[coll][id].d; save(); }
@@ -311,11 +314,12 @@ function privRec(c, id, rec) {
   if (c === 'budgets') return isPriv(id.split('|')[0]);
   const g = S.gifts[id.split('|')[0]]; return !!(g && isPriv(g.pid));
 }
-function sharedState() {
+function sharedState(withAuth) {
   const o = emptyS();
   COLL.forEach(c => Object.keys(S[c]).forEach(k => { if (!privRec(c, k, S[c][k])) o[c][k] = S[c][k]; }));
   Object.keys(S.tickets || {}).forEach(k => { o.likes['ticket|' + k] = S.tickets[k]; }); // les tickets voyagent dans 'likes' (compatible avec le serveur existant)
-  delete o.tickets;
+  if (withAuth) Object.keys(S.auth || {}).forEach(k => { o.likes['auth|' + k] = S.auth[k]; }); // mots de passe (empreintes) : synchro uniquement, jamais dans les exports
+  delete o.tickets; delete o.auth;
   return o;
 }
 
@@ -397,12 +401,77 @@ function confirmDlg(msg, fn, label) {
 const BULBS = ['#FFC94D', '#FF5C74', '#5FE0A8', '#6FB7FF'];
 const lights = () => '' ||  `<div class="lights" aria-hidden="true">${Array.from({ length: 32 }, (_, i) => `<span class="b" style="--bc:${BULBS[i % 4]};--d:${((i * 37) % 30) / 10}s"></span>`).join('')}</div>`;
 
+/* ---- Mot de passe ---- */
+const hasPw = u => !!(S.auth[u] && S.auth[u].h);
+const b2h = b => Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('');
+async function hashPw(pw, salt) {
+  const enc = new TextEncoder(), k = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveBits']);
+  return b2h(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' }, k, 256));
+}
+const gateMode = () => hasPw(pending) ? 'login' : (syncedOnce || !syncUrl) ? 'create' : (typeof syncState !== 'undefined' && syncState === 'err') ? 'err' : 'wait';
+function gateRefresh() { if (!me && pending && gateMode() !== shownMode) render(); }
+function enter(U, h) {
+  me = U; pending = null; TOK = h;
+  try { localStorage.setItem('cadeaux.me', me); localStorage.setItem('cadeaux.tok', h); } catch (e) {}
+  view = 'home'; render();
+}
+function gateView() {
+  const U = pending, mode = gateMode(); shownMode = mode;
+  const head = `<div style="display:flex;justify-content:center;margin:18px 0 10px"><div style="width:96px;height:96px">${LOGO}</div></div>`;
+  const back = `<div style="text-align:center;margin-top:18px"><button class="link" data-act="notme">Ce n’est pas ${esc(U)}</button></div>`;
+  const title = t => `<h2 style="margin-top:8px;text-align:center">${t}</h2>`;
+  if (mode === 'wait') return head + title('Salut ' + esc(U)) + `<p class="sub" style="text-align:center">Connexion en cours…</p>` + back;
+  if (mode === 'err') return head + title('Salut ' + esc(U)) + `<p class="sub" style="text-align:center">Impossible de joindre le serveur pour vérifier ton compte.</p><div style="text-align:center"><button class="btn" data-act="retryAuth">Réessayer</button></div>` + back;
+  if (mode === 'login') return head + title('Salut ' + esc(U)) + `<form data-form="auth" data-mode="login" class="card" style="margin-top:12px"><label>Mot de passe<input name="pw" type="password" autocomplete="current-password" required autofocus></label><p id="autherr" class="sub" style="color:var(--bad);margin:0 0 10px;min-height:1em"></p><button class="btn block">Entrer</button></form>` + back;
+  return head + title('Crée ton mot de passe') + `<form data-form="auth" data-mode="create" class="card" style="margin-top:12px"><p class="sub" style="margin-top:0">Bienvenue ${esc(U)}. Ce mot de passe protège ton profil : il te sera demandé sur chaque nouvel appareil.</p><label>Mot de passe (4 caractères minimum)<input name="pw" type="password" autocomplete="new-password" minlength="4" required autofocus></label><label>Confirme-le<input name="pw2" type="password" autocomplete="new-password" minlength="4" required></label><p id="autherr" class="sub" style="color:var(--bad);margin:0 0 10px;min-height:1em"></p><button class="btn block">Créer et entrer</button></form>` + back;
+}
+async function handleAuth(f) {
+  const E = f.elements, U = pending, err = m => { const x = $('#autherr'); if (x) x.textContent = m; };
+  try {
+    if (!(window.crypto && crypto.subtle)) return err('Ce navigateur ne permet pas de créer de mot de passe ici.');
+    if (f.dataset.mode === 'login') {
+      const a = S.auth[U]; if (!a || !a.h) return render();
+      const hh = await hashPw(E.pw.value, a.s); if (hh !== a.h) return err('Mot de passe incorrect.');
+      enter(U, hh);
+    } else {
+      const pw = E.pw.value; if (pw.length < 4) return err('4 caractères minimum.');
+      if (pw !== E.pw2.value) return err('Les deux mots de passe sont différents.');
+      if (hasPw(U)) return render();
+      const s = uid() + uid(), hh = await hashPw(pw, s);
+      S.auth[U] = { h: hh, s, u: Date.now() }; save(); enter(U, hh); toast('Mot de passe créé');
+    }
+  } catch (e) { err('Erreur : ' + (e.message || e)); }
+}
+async function handlePwChange(f) {
+  const E = f.elements, err = m => { const x = $('#pwerr'); if (x) x.textContent = m; };
+  try {
+    const a = S.auth[me]; if (!a || !(await hashPw(E.cur.value, a.s) === a.h)) return err('Mot de passe actuel incorrect.');
+    const pw = E.pw.value; if (pw.length < 4) return err('4 caractères minimum.');
+    if (pw !== E.pw2.value) return err('Les deux nouveaux mots de passe sont différents.');
+    const s = uid() + uid(), hh = await hashPw(pw, s);
+    S.auth[me] = { h: hh, s, u: Date.now() }; TOK = hh; try { localStorage.setItem('cadeaux.tok', hh); } catch (e) {}
+    save(); closeModal(); render(); toast('Mot de passe modifié');
+  } catch (e) { err('Erreur : ' + (e.message || e)); }
+}
+function pwForm() {
+  const o = other(me);
+  return `<form data-form="pwchange"><h2>Mon mot de passe</h2>
+  <label>Mot de passe actuel<input name="cur" type="password" autocomplete="current-password" required></label>
+  <label>Nouveau mot de passe<input name="pw" type="password" autocomplete="new-password" minlength="4" required></label>
+  <label>Confirme le nouveau<input name="pw2" type="password" autocomplete="new-password" minlength="4" required></label>
+  <p id="pwerr" class="sub" style="color:var(--bad);margin:0 0 8px;min-height:1em"></p>
+  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div>
+  <p class="sub" style="margin:16px 0 0">${esc(o)} a oublié son mot de passe ? <button type="button" class="link" data-act="resetOther">Le réinitialiser</button> (${esc(o)} en choisira un nouveau à sa prochaine connexion).</p></form>`;
+}
+
 function render() {
-  document.body.className = me ? me.toLowerCase() : '';
+  if (me && S.auth[me] && TOK !== S.auth[me].h) { pending = me; me = null; }
+  document.body.className = (me || pending) ? (me || pending).toLowerCase() : '';
   $('#themecolor').content = '#F3C65B';
   const hdr = $('#hdr'), nav = $('#nav'), app = $('#app');
   if (!me) {
     hdr.innerHTML = '<div class="top"><h1>' + LOGO + 'Super Cadeau</h1></div>'; nav.style.display = 'none';
+    if (pending) { app.innerHTML = gateView(); return; }
     app.innerHTML = `<div style="display:flex;justify-content:center;margin:18px 0 10px"><div style="width:96px;height:96px;filter:drop-shadow(0 8px 18px rgba(20,80,58,.28))">${LOGO}</div></div>
       <h2 style="margin-top:8px;text-align:center">Qui es-tu ?</h2>
       <p class="sub" style="margin:-8px 0 20px;text-align:center">Chacun a son espace. Vos données se partagent via l’onglet Synchro.</p>
@@ -610,6 +679,7 @@ function moreView() {
   const open = live('tickets').filter(t => t.status !== 'resolu').length;
   return `<h2>Plus</h2>
   <button class="card pcard" data-act="nav" data-v="tickets"><div class="thumbs"><i>${IC.ticket}</i></div><div class="grow"><div class="pname">Tickets</div><div class="pmeta">Signaler un problème ou proposer une amélioration${open ? `, ${open} ouvert${open > 1 ? 's' : ''}` : ''}</div></div></button>
+  <button class="card pcard" data-act="pwForm"><div class="thumbs"><i>${IC.lock}</i></div><div class="grow"><div class="pname">Mon mot de passe</div><div class="pmeta">Changer le mot de passe de ${esc(me)}</div></div></button>
   <button class="card pcard" data-act="nav" data-v="sync"><div class="thumbs"><i>${IC.sync}</i></div><div class="grow"><div class="pname">Synchronisation</div><div class="pmeta">${SYNC_LABEL[syncState]}, partage avec l’autre personne et sauvegardes</div></div></button>`;
 }
 
@@ -728,10 +798,10 @@ function parseIncoming(txt) {
   if (!o || typeof o !== 'object' || !o.people) throw new Error('format');
   return o;
 }
-function merge(inc) {
+function merge(inc, allowAuth) {
   let n = 0;
   const take = (c, k, rec) => { const cur = S[c][k]; if (rec && typeof rec === 'object' && (!cur || (rec.u || 0) > (cur.u || 0))) { S[c][k] = rec; n++; } };
-  COLL.forEach(c => { const m = inc[c] || {}; Object.keys(m).forEach(k => { if (c === 'likes' && k.indexOf('ticket|') === 0) take('tickets', k.slice(7), m[k]); else take(c, k, m[k]); }); });
+  COLL.forEach(c => { const m = inc[c] || {}; Object.keys(m).forEach(k => { if (c === 'likes' && k.indexOf('ticket|') === 0) take('tickets', k.slice(7), m[k]); else if (c === 'likes' && k.indexOf('auth|') === 0) { if (allowAuth) take('auth', k.slice(5), m[k]); } else take(c, k, m[k]); }); });
   Object.keys(inc.tickets || {}).forEach(k => take('tickets', k, inc.tickets[k]));
   persist(); return n;
 }
@@ -749,8 +819,12 @@ const fileName = (full) => `super-cadeau${full ? '-complet' : ''}-${(me || 'moi'
 
 /* ================= Actions ================= */
 const actions = {
-  who(t) { me = t.dataset.v; try { localStorage.setItem('cadeaux.me', me); } catch (e) {} view = 'home'; render(); },
-  switch() { me = null; render(); },
+  who(t) { pending = t.dataset.v; render(); },
+  notme() { pending = null; render(); },
+  retryAuth() { syncNow(true); },
+  switch() { me = null; pending = null; TOK = ''; try { localStorage.removeItem('cadeaux.me'); localStorage.removeItem('cadeaux.tok'); } catch (e) {} render(); },
+  pwForm() { openModal(pwForm()); },
+  resetOther() { const o = other(me); confirmDlg(`Réinitialiser le mot de passe de ${o} ?`, () => { S.auth[o] = { h: '', s: '', u: Date.now() }; save(); closeModal(); toast(`${o} choisira un nouveau mot de passe`); }, 'Réinitialiser'); },
   nav(t) { view = t.dataset.v; cur = null; render(); window.scrollTo(0, 0); },
   open(t) { view = 'person'; cur = t.dataset.id; render(); window.scrollTo(0, 0); },
   closeModal: closeModal,
@@ -818,6 +892,8 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('submit', e => {
   const f = e.target.closest('form[data-form]'); if (!f) return; e.preventDefault();
+  if (f.dataset.form === 'auth') { handleAuth(f); return; }
+  if (f.dataset.form === 'pwchange') { handlePwChange(f); return; }
   const id = f.dataset.id || uid(), isNew = !f.dataset.id, E = f.elements;
   if (f.dataset.form === 'ticket') {
     const old = S.tickets[id] || {};
@@ -884,12 +960,12 @@ async function syncNow(manual) {
   if (syncBusy) { syncAgain = true; return; }
   syncBusy = true; setSync('busy');
   try {
-    const r = await fetch(syncUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ data: sharedState() }) });
+    const r = await fetch(syncUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ data: sharedState(true) }) });
     const j = await r.json();
     if (!j || !j.ok || !j.data) throw new Error((j && j.error) || 'réponse invalide');
-    const n = merge(j.data); syncAt = new Date(); setSync('ok');
+    const n = merge(j.data, true); syncAt = new Date(); syncedOnce = true; setSync('ok'); gateRefresh();
     if (n) maybeRender(); else if (manual) { toast('Connecté, déjà à jour'); if (view === 'sync') render(); }
-  } catch (e) { syncErrMsg = String(e && e.message || e); setSync('err'); if (manual) toast('Synchronisation impossible : ' + syncErrMsg.slice(0, 120)); }
+  } catch (e) { syncErrMsg = String(e && e.message || e); setSync('err'); gateRefresh(); if (manual) toast('Synchronisation impossible : ' + syncErrMsg.slice(0, 120)); }
   syncBusy = false;
   if (syncAgain) { syncAgain = false; scheduleSync(); }
 }
@@ -899,8 +975,8 @@ async function pollSync() {
   try {
     const r = await fetch(syncUrl), j = await r.json();
     if (!j || !j.ok || !j.data) throw new Error((j && j.error) || 'réponse invalide');
-    const n = merge(j.data); syncAt = new Date(); setSync('ok'); if (n) maybeRender();
-  } catch (e) { setSync('err'); }
+    const n = merge(j.data, true); syncAt = new Date(); syncedOnce = true; setSync('ok'); gateRefresh(); if (n) maybeRender();
+  } catch (e) { setSync('err'); gateRefresh(); }
   syncBusy = false;
 }
 setInterval(pollSync, 6000);
