@@ -624,7 +624,6 @@ async function fetchPreview(url) {
   const [d, pg] = await Promise.all([viaMicrolink(), viaPage()]);
   let img = await firstGoodImage([d && d.image && d.image.url].concat(pg ? pg.imgs : []));
   if (!img && asin) img = await firstGoodImage([`https://m.media-amazon.com/images/P/${asin}.01._SCLZZZZZZZ_.jpg`, `https://images-na.ssl-images-amazon.com/images/P/${asin}.01.LZZZZZZZ.jpg`]);
-  if (!img && d && d.logo && d.logo.url) img = await firstGoodImage([d.logo.url]);
   const title = (d && d.title) || (pg && pg.title) || '';
   return (img || title || (pg && pg.price)) ? { img, title, price: (pg && pg.price) || '', cur: (pg && pg.cur) || '' } : null;
 }
@@ -847,7 +846,7 @@ function giftCard(g, showPerson) {
   const p = S.people[g.pid], likes = USERS.filter(u => likedBy(g.id, u)), pl = purchaseLine(g);
   return `<article class="gift">
     <div class="gimg">${IC.gift}${g.img ? `<img src="${esc(g.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onload="if(this.naturalWidth<60||this.naturalHeight<60)this.remove()" onerror="this.remove()">` : ''}
-      <span class="tagw">${g.price != null && g.price !== '' ? `<span class="tag">${eur(+g.price)}</span>` : '<span class="tag none">Prix ?</span>'}</span>
+      <span class="tagw">${g.price != null && g.price !== '' ? `<span class="tag">${eur(+g.price)}</span>` : `<button type="button" class="tag none" data-act="editGift" data-id="${g.id}" style="border:0;cursor:pointer;font:inherit">Prix ? Ajouter</button>`}</span>
       ${g.status !== 'idee' ? `<span class="st ${g.status}">${STATUS[g.status]}</span>` : ''}</div>
     <div class="gbody">
       <div class="gtitle">${esc(g.t)}</div>
