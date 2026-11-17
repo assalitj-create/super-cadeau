@@ -271,8 +271,16 @@ nav button.on::before{top:-3px;width:44px;height:6px;border-radius:0 0 4px 4px;b
 <script>
 "use strict";
 /* ================= État & utilitaires ================= */
-const USERS = ['Johann', 'Elsa', 'Andréa'];
+const BASE_USERS = ['Johann', 'Elsa', 'Andréa'];
+let USERS = BASE_USERS.slice();
 const UCLS = { Johann: 'johann', Elsa: 'elsa', 'Andréa': 'andrea' };
+const USER_COLORS = ['#7B3FC4', '#E8710A', '#0E7490', '#B83280', '#5B6B1F', '#3F5BD8'];
+const APP_URL = 'https://assalitj-create.github.io/super-cadeau/';
+function rebuildUsers() {
+  const extra = Object.values((S && S.users) || {}).filter(u => u && !u.d && u.name && !BASE_USERS.includes(u.name)).sort((a, b) => (a.c || 0) - (b.c || 0)).map(u => u.name);
+  USERS = BASE_USERS.concat(extra.filter((n, i) => extra.indexOf(n) === i));
+}
+const userColor = n => { const r = Object.values((S && S.users) || {}).find(u => u && !u.d && u.name === n); return r ? r.color : ''; };
 const others = u => USERS.filter(x => x !== u);
 const listFr = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' et ' + a[a.length - 1] : (a[0] || '');
 const COLL = ['people', 'gifts', 'budgets', 'shares', 'likes'];
@@ -305,12 +313,13 @@ const IC = {
 };
 
 const LOGO = "<svg aria-hidden='true' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='#C8283A'/><rect x='22' y='52' width='56' height='36' rx='4' fill='none' stroke='#fff' stroke-width='4'/><rect x='16' y='42' width='68' height='12' rx='3' fill='none' stroke='#fff' stroke-width='4'/><line x1='50' y1='42' x2='50' y2='88' stroke='#fff' stroke-width='4'/><polygon points='62,8 36,48 49,48 40,80 72,36 57,36 66,8' fill='#F3C65B' stroke='#C8283A' stroke-width='3' stroke-linejoin='round'/></svg>";
-const emptyS = () => ({ people: {}, gifts: {}, budgets: {}, shares: {}, likes: {}, tickets: {}, auth: {}, groups: {}, pgroup: {} });
+const emptyS = () => ({ people: {}, gifts: {}, budgets: {}, shares: {}, likes: {}, tickets: {}, auth: {}, groups: {}, pgroup: {}, users: {} });
 let S = emptyS(), me = null;
 try {
   const raw = JSON.parse(localStorage.getItem('cadeaux.v1') || 'null');
   if (raw) S = Object.assign(emptyS(), raw);
   me = localStorage.getItem('cadeaux.me');
+  rebuildUsers();
   if (!USERS.includes(me)) me = null;
 } catch (e) {}
 let TOK = '', pending = null, syncedOnce = false, shownMode = '';
@@ -342,7 +351,8 @@ function sharedState(withAuth) {
   Object.keys(S.tickets || {}).forEach(k => { o.likes['ticket|' + k] = S.tickets[k]; }); // les tickets voyagent dans 'likes' (compatible avec le serveur existant)
   if (withAuth) Object.keys(S.auth || {}).forEach(k => { o.likes['auth|' + k] = S.auth[k]; }); // mots de passe (empreintes) : synchro uniquement, jamais dans les exports
   if (withAuth) { Object.keys(S.groups || {}).forEach(k => { o.likes['group|' + k] = S.groups[k]; }); Object.keys(S.pgroup || {}).forEach(k => { o.likes['pgroup|' + k] = S.pgroup[k]; }); } // groupes : propres à chaque utilisateur, suivent ses appareils
-  delete o.tickets; delete o.auth; delete o.groups; delete o.pgroup;
+  if (withAuth) Object.keys(S.users || {}).forEach(k => { o.likes['user|' + k] = S.users[k]; });
+  delete o.tickets; delete o.auth; delete o.groups; delete o.pgroup; delete o.users;
   return o;
 }
 
@@ -477,6 +487,30 @@ async function handlePwChange(f) {
     save(); closeModal(); render(); toast('Mot de passe modifié');
   } catch (e) { err('Erreur : ' + (e.message || e)); }
 }
+function userForm() {
+  return `<form data-form="user"><h2>Ajouter un utilisateur</h2>
+  <p class="sub" style="margin-top:-8px">Cette personne aura son propre profil et son mot de passe. Tu pourras ensuite lui envoyer le lien de l’appli.</p>
+  <label>Prénom<input name="name" required maxlength="30" placeholder="Ex. Léa" autocomplete="off"></label>
+  <p id="usererr" class="alert" hidden></p>
+  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Ajouter</button></div></form>`;
+}
+function inviteText(name) {
+  const link = /^https?:$/.test(location.protocol) ? location.origin + location.pathname : APP_URL;
+  const v = [`${name}, ${me} t’invite sur Super Cadeau, l’appli pour organiser les cadeaux de Noël à plusieurs (idées, budgets, paiements) : ${link}`,
+    `${name}, ${me} t’invite sur Super Cadeau, l’appli pour organiser les cadeaux de Noël à plusieurs : ${link}`,
+    `${me} t’invite sur Super Cadeau (cadeaux de Noël à plusieurs) : ${link}`];
+  return v.find(x => x.length <= 160) || v[2];
+}
+function inviteView(name) {
+  const t = inviteText(name), enc = encodeURIComponent(t);
+  return `<h2>${esc(name)} est ajouté</h2>
+  <p class="sub" style="margin-top:-8px">Envoie-lui ce message : il explique ce que c’est et contient le lien. ${esc(name)} choisira son prénom et créera son mot de passe.</p>
+  <textarea id="invtxt" readonly rows="4" style="font-weight:600">${esc(t)}</textarea>
+  <div class="sub" style="text-align:right;margin:2px 0 12px">${t.length} / 160 caractères</div>
+  <div class="row" style="margin-bottom:10px"><button class="btn" data-act="copyInvite" data-name="${esc(name)}">Copier le message</button>${navigator.share ? `<button class="btn sec" data-act="shareInvite" data-name="${esc(name)}">Partager…</button>` : ''}</div>
+  <div class="row"><a class="btn sec sm" style="text-decoration:none" href="sms:?&body=${enc}">SMS</a><a class="btn sec sm" style="text-decoration:none" href="https://wa.me/?text=${enc}" target="_blank" rel="noopener">WhatsApp</a></div>
+  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Fermer</button></div>`;
+}
 function pwForm() {
   const os = others(me);
   return `<form data-form="pwchange"><h2>Mon mot de passe</h2>
@@ -490,7 +524,9 @@ function pwForm() {
 
 function render() {
   if (me && S.auth[me] && TOK !== S.auth[me].h) { pending = me; me = null; }
-  document.body.className = (me || pending) ? UCLS[me || pending] : '';
+  document.body.className = (me || pending) ? (UCLS[me || pending] || 'dyn') : '';
+  { const c = (me || pending) && !UCLS[me || pending] ? userColor(me || pending) : '', st = document.body.style;
+    if (c) { st.setProperty('--ac', c); st.setProperty('--ac2', 'color-mix(in srgb, ' + c + ' 18%, #fff)'); } else { st.removeProperty('--ac'); st.removeProperty('--ac2'); } }
   $('#themecolor').content = '#F3C65B';
   const hdr = $('#hdr'), nav = $('#nav'), app = $('#app');
   if (!me) {
@@ -499,7 +535,7 @@ function render() {
     app.innerHTML = `<div style="display:flex;justify-content:center;margin:18px 0 10px"><div style="width:96px;height:96px;filter:drop-shadow(0 8px 18px rgba(20,80,58,.28))">${LOGO}</div></div>
       <h2 style="margin-top:8px;text-align:center">Qui es-tu ?</h2>
       <p class="sub" style="margin:-8px 0 20px;text-align:center">Chacun a son espace. Vos données se partagent via l’onglet Synchro.</p>
-      <div class="who">${USERS.map(u => `<button class="${UCLS[u]}" data-act="who" data-v="${u}"><i>${u[0]}</i>${u}</button>`).join('')}</div>`;
+      <div class="who">${USERS.map(u => `<button class="${UCLS[u] || ''}" ${UCLS[u] ? '' : `style="--c:${userColor(u) || '#555'}"`} data-act="who" data-v="${u}"><i>${esc(u[0].toUpperCase())}</i>${esc(u)}</button>`).join('')}</div>`;
     return;
   }
   nav.style.display = 'flex';
@@ -736,6 +772,7 @@ function moreView() {
   const open = live('tickets').filter(t => t.status !== 'resolu').length;
   return `<h2>Plus</h2>
   <button class="card pcard" data-act="nav" data-v="tickets"><div class="thumbs"><i>${IC.ticket}</i></div><div class="grow"><div class="pname">Tickets</div><div class="pmeta">Signaler un problème ou proposer une amélioration${open ? `, ${open} ouvert${open > 1 ? 's' : ''}` : ''}</div></div></button>
+  <button class="card pcard" data-act="addUser"><div class="thumbs"><i>${IC.users}</i></div><div class="grow"><div class="pname">Ajouter un utilisateur</div><div class="pmeta">Invite quelqu’un à utiliser Super Cadeau avec vous</div></div></button>
   <button class="card pcard" data-act="pwForm"><div class="thumbs"><i>${IC.lock}</i></div><div class="grow"><div class="pname">Mon mot de passe</div><div class="pmeta">Changer le mot de passe de ${esc(me)}</div></div></button>
   <button class="card pcard" data-act="nav" data-v="sync"><div class="thumbs"><i>${IC.sync}</i></div><div class="grow"><div class="pname">Synchronisation</div><div class="pmeta">${SYNC_LABEL[syncState]}, sauvegardes</div></div></button>`;
 }
@@ -863,8 +900,9 @@ function parseIncoming(txt) {
 function merge(inc, allowAuth) {
   let n = 0;
   const take = (c, k, rec) => { const cur = S[c][k]; if (rec && typeof rec === 'object' && (!cur || (rec.u || 0) > (cur.u || 0))) { S[c][k] = rec; n++; } };
-  COLL.forEach(c => { const m = inc[c] || {}; Object.keys(m).forEach(k => { if (c === 'likes' && k.indexOf('ticket|') === 0) take('tickets', k.slice(7), m[k]); else if (c === 'likes' && k.indexOf('auth|') === 0) { if (allowAuth) take('auth', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('pgroup|') === 0) { if (allowAuth) take('pgroup', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('group|') === 0) { if (allowAuth) take('groups', k.slice(6), m[k]); } else take(c, k, m[k]); }); });
+  COLL.forEach(c => { const m = inc[c] || {}; Object.keys(m).forEach(k => { if (c === 'likes' && k.indexOf('ticket|') === 0) take('tickets', k.slice(7), m[k]); else if (c === 'likes' && k.indexOf('auth|') === 0) { if (allowAuth) take('auth', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('user|') === 0) { if (allowAuth) take('users', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('pgroup|') === 0) { if (allowAuth) take('pgroup', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('group|') === 0) { if (allowAuth) take('groups', k.slice(6), m[k]); } else take(c, k, m[k]); }); });
   Object.keys(inc.tickets || {}).forEach(k => take('tickets', k, inc.tickets[k]));
+  if (n) rebuildUsers();
   persist(); return n;
 }
 function doImport(txt) {
@@ -919,7 +957,9 @@ const actions = {
     setSync('busy'); render(); syncNow(true);
   },
   syncNow() { syncNow(true); },
-  async copyInvite() { toast(await copyText(location.origin + location.pathname + '#sync=' + encodeURIComponent(syncUrl)) ? 'Lien copié, envoie-le à l’autre' : 'Copie impossible'); },
+  async copyInvite(t) { if (t && t.dataset.name) { toast(await copyText(inviteText(t.dataset.name)) ? 'Message copié, colle-le dans ta messagerie' : 'Copie impossible'); } else { toast(await copyText(location.origin + location.pathname + '#sync=' + encodeURIComponent(syncUrl)) ? 'Lien copié, envoie-le à l’autre' : 'Copie impossible'); } },
+  async shareInvite(t) { try { await navigator.share({ title: 'Super Cadeau', text: inviteText(t.dataset.name) }); } catch (e) {} },
+  addUser() { openModal(userForm()); },
   addTicket() { openModal(ticketForm()); },
   editTicket(t) { openModal(ticketForm(Object.assign({ id: t.dataset.id }, S.tickets[t.dataset.id]))); },
   delTicket(t) { const id = t.dataset.id; confirmDlg(`Supprimer le ticket « ${S.tickets[id].t} » ?`, () => { del('tickets', id); render(); }); },
@@ -958,6 +998,14 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('submit', e => {
   const f = e.target.closest('form[data-form]'); if (!f) return; e.preventDefault();
+  if (f.dataset.form === 'user') {
+    const nm = f.elements.name.value.trim().replace(/\s+/g, ' '), x = $('#usererr');
+    if (!nm) return;
+    if (USERS.some(u => u.toLowerCase() === nm.toLowerCase())) { x.textContent = nm + ' existe déjà. Choisis un autre prénom.'; x.hidden = false; return; }
+    const nid = uid(), used = Object.values(S.users).filter(u => !u.d).length;
+    put('users', nid, { name: nm, color: USER_COLORS[used % USER_COLORS.length], by: me, c: Date.now() });
+    rebuildUsers(); openModal(inviteView(nm)); render(); return;
+  }
   if (f.dataset.form === 'groups') {
     myGroups().forEach(g => { const v = f.elements['g_' + g.id]; if (v && v.value.trim() && v.value.trim() !== g.name) put('groups', g.id, { name: v.value.trim() }); });
     const nn = f.elements.newgroup.value.trim(); if (nn && !myGroups().some(g => g.name.toLowerCase() === nn.toLowerCase())) put('groups', uid(), { owner: me, name: nn });
