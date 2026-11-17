@@ -768,10 +768,8 @@ function render() {
     return;
   }
   nav.style.display = 'flex';
-  hdr.className = (view === 'home' || view === 'person') ? 'big' : '';
-  const hero = view === 'home'
-    ? `<div class="hero"><div class="hello">Salut ${esc(me)}</div><div class="count">${daysToXmas()}</div>${TREE}</div>`
-    : view === 'person'
+  hdr.className = view === 'person' ? 'big' : '';
+  const hero = view === 'person'
       ? `<div class="hero"><div class="hrow"><button class="rb" data-act="nav" data-v="home" aria-label="Retour">${IC.back}</button><span><button class="rb" data-act="editPerson" data-id="${cur}" aria-label="Modifier">${IC.edit}</button><button class="rb" data-act="delPerson" data-id="${cur}" aria-label="Supprimer">${IC.trash}</button></span></div><div class="hname">${esc(S.people[cur].name)}</div><div class="hshare">${shareAvs(S.people[cur])}</div></div>`
       : '';
   hdr.innerHTML = `<div class="top"><h1>${LOGO}Super Cadeau</h1><div class="row" style="gap:12px;flex-wrap:nowrap"><span id="syncdot" class="sync s-${syncState}" title="${SYNC_LABEL[syncState]}"></span><button class="chip-user" data-act="switch" title="Changer d’utilisateur"><i>${esc(me[0])}</i>${esc(me)}</button></div></div>` + hero;
