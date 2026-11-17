@@ -769,7 +769,7 @@ function render() {
   if (me && view === 'person' && !personOk(cur)) { view = 'home'; cur = null; }
   if (!me) {
     hdr.className = 'big gate';
-    hdr.innerHTML = `<div class="hero"><div class="glogo">${LOGO}</div><div class="gt">Super Cadeau</div><div class="gs">Les cadeaux de Noël, en famille</div><i class="dot" style="left:18px;bottom:14px;width:10px;height:10px;background:#F4C542"></i><i class="dot" style="left:44px;bottom:34px;width:7px;height:7px;background:#fff"></i><i class="dot" style="right:22px;bottom:20px;width:10px;height:10px;background:#fff"></i><i class="dot" style="right:52px;bottom:40px;width:7px;height:7px;background:#F4C542"></i></div>`;
+    hdr.innerHTML = `<div class="hero"><div class="glogo">${LOGO}</div><div class="gt">Super Cadeau</div><div class="gs">Même le Père Noël est jaloux</div><i class="dot" style="left:18px;bottom:14px;width:10px;height:10px;background:#F4C542"></i><i class="dot" style="left:44px;bottom:34px;width:7px;height:7px;background:#fff"></i><i class="dot" style="right:22px;bottom:20px;width:10px;height:10px;background:#fff"></i><i class="dot" style="right:52px;bottom:40px;width:7px;height:7px;background:#F4C542"></i></div>`;
     nav.style.display = 'none';
     if (pending) { app.innerHTML = gateView(); return; }
     app.innerHTML = `<div class="gwrap"><h2 class="qui">Qui es-tu ?</h2><div class="who">${USERS.map(u => `<button class="${UCLS[u] || ''}" style="--c:${colorOf(u)}" data-act="who" data-v="${u}"><i>${esc(u[0].toUpperCase())}</i>${esc(u)}</button>`).join('')}</div></div>`;
