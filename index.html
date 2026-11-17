@@ -605,6 +605,16 @@ function pageInfo(html, url) {
   const pi = priceInfo(doc);
   return { imgs, title: meta('meta[property="og:title"]', 'meta[name="twitter:title"]') || doc.title || '', price: pi.price, cur: pi.cur };
 }
+function slugTitle(url) {
+  try {
+    const segs = new URL(url).pathname.split('/').filter(Boolean).map(x => decodeURIComponent(x));
+    const i = segs.findIndex(x => /^(dp|gp|product|p|d)$/i.test(x));
+    let seg = i > 0 ? segs[i - 1] : segs.filter(x => /[a-zA-Z]{3}.*-.*[a-zA-Z]{2}/.test(x)).sort((x, y) => y.length - x.length)[0] || '';
+    seg = seg.replace(/\.(html?|php|aspx?)$/i, '').replace(/[-_+]+/g, ' ').replace(/\b[A-Z0-9]{10}\b/g, '').replace(/\s+/g, ' ').trim();
+    if (seg.length < 4 || /^(en|fr|de|www)$/i.test(seg)) return '';
+    return seg.charAt(0).toUpperCase() + seg.slice(1);
+  } catch (e) { return ''; }
+}
 async function fetchPreview(url) {
   if (isImgUrl(url)) return { img: url };
   const asin = (url.match(/\/(?:dp|gp\/product|d)\/([A-Z0-9]{10})(?:[/?]|$)/i) || [])[1];
@@ -624,7 +634,8 @@ async function fetchPreview(url) {
   const [d, pg] = await Promise.all([viaMicrolink(), viaPage()]);
   let img = await firstGoodImage([d && d.image && d.image.url].concat(pg ? pg.imgs : []));
   if (!img && asin) img = await firstGoodImage([`https://m.media-amazon.com/images/P/${asin}.01._SCLZZZZZZZ_.jpg`, `https://images-na.ssl-images-amazon.com/images/P/${asin}.01.LZZZZZZZ.jpg`]);
-  const title = (d && d.title) || (pg && pg.title) || '';
+  let title = (d && d.title) || (pg && pg.title) || '';
+  if (!title || /^(amazon|robot check|captcha|just a moment|access denied|attention required)/i.test(title) || /^amazon\.[a-z.]+\s*:?\s*$/i.test(title)) title = slugTitle(url);
   return (img || title || (pg && pg.price)) ? { img, title, price: (pg && pg.price) || '', cur: (pg && pg.cur) || '' } : null;
 }
 
