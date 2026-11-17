@@ -185,7 +185,7 @@ textarea.code{font:12px/1.3 ui-monospace,Menlo,monospace;min-height:90px}
 .badge.shared{background:var(--ac2)}.badge.lock{padding:3px 10px 3px 8px;font-size:13px}.badge.lock svg{width:15px;height:15px}.badge.lock{gap:5px;align-items:center}
 .stat{min-width:0;padding:12px 12px}.stat b{font-size:20px;white-space:nowrap}.stat span{display:block;overflow-wrap:anywhere}.stats{overflow:hidden}
 body.andrea{--ac:#2B59C3;--ac2:#DCE6FA;--alt:#1E7A52}
-form:has(input[value=private]:checked) .mbox{display:none}
+form:has(input[value=private]:checked) .mbox,form:has(input[value=mine]:checked) .mbox{display:none}
 :root{--bg:#F3C65B;--paper:#fff;--ink:#111;--ink-m:#4D4220;--line:#111;--field:#FFF3CF;--div:rgba(17,17,17,.16);--ac:#1E7A52;--ac2:#DDF2E6;--hd:#F3C65B;--alt:#C8283A;--sans:"Bricolage Grotesque","Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--sh:4px 4px 0 #111}
 body.elsa{--bg:#F3C65B;--ink-m:#4D4220;--line:#111;--field:#FFF3CF;--ac:#C8283A;--ac2:#FCE6E9;--hd:#F3C65B;--alt:#1E7A52}
 body{font-weight:500}
@@ -296,6 +296,7 @@ const IC = {
   pay: svg('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>'),
   track: svg('<path d="M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10"/>'),
   ticket: svg('<path d="M4 8a2 2 0 002-2h12a2 2 0 002 2v2a2 2 0 000 4v2a2 2 0 00-2 2H6a2 2 0 00-2-2v-2a2 2 0 000-4z"/><path d="M12 8v1M12 11.5v1M12 15v1"/>'),
+  devices: svg('<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>'),
   users: svg('<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14.5c2.5 0 4 1.5 4 4"/>'),
   more: svg('<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>'),
   lock: svg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>'),
@@ -320,10 +321,12 @@ const save = () => { persist(); if (typeof scheduleSync === 'function') schedule
 function put(coll, id, obj) { S[coll][id] = Object.assign({}, S[coll][id] || {}, obj, { u: Date.now() }); delete S[coll][id].d; save(); }
 function del(coll, id) { if (S[coll][id]) { S[coll][id].d = 1; S[coll][id].u = Date.now(); save(); } }
 const live = coll => Object.entries(S[coll]).filter(([, v]) => !v.d).map(([id, v]) => Object.assign({ id }, v));
-const memOf = p => p.scope === 'private' ? [p.owner] : (Array.isArray(p.members) && p.members.length ? p.members : ['Johann', 'Elsa']);
-const visible = p => p.scope === 'private' ? p.owner === me : memOf(p).includes(me);
+const isSoloP = p => p.scope === 'private' || p.scope === 'mine';
+const memOf = p => isSoloP(p) ? [p.owner] : (Array.isArray(p.members) && p.members.length ? p.members : ['Johann', 'Elsa']);
+const visible = p => isSoloP(p) ? p.owner === me : memOf(p).includes(me);
 const personOk = pid => { const p = S.people[pid]; return !!(p && !p.d && visible(p)); };
 const peopleList = () => live('people').filter(visible);
+const isSolo = pid => !!(S.people[pid] && isSoloP(S.people[pid]));
 const isPriv = pid => !!(S.people[pid] && S.people[pid].scope === 'private');
 const membersOf = pid => S.people[pid] ? memOf(S.people[pid]) : USERS;
 /* Les cadeaux personnels ne quittent jamais l'appareil : ils sont filtrés de toute sortie (synchro, export, code). */
@@ -355,7 +358,7 @@ const domain = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } 
 /* ---- Répartition automatique : moitié-moitié, ajustée aux budgets de chacun ---- */
 function computeShares() {
   const out = {}, byP = {};
-  live('gifts').filter(g => personOk(g.pid) && !isPriv(g.pid) && g.status !== 'idee').forEach(g => (byP[g.pid] = byP[g.pid] || []).push(g));
+  live('gifts').filter(g => personOk(g.pid) && !isSolo(g.pid) && g.status !== 'idee').forEach(g => (byP[g.pid] = byP[g.pid] || []).push(g));
   Object.keys(byP).forEach(pid => {
     const rem = {}; USERS.forEach(u => { const b = budgetOf(pid, u); rem[u] = b == null ? Infinity : b; });
     const list = byP[pid].sort((a, b) => (a.c || 0) - (b.c || 0) || a.id.localeCompare(b.id));
@@ -636,19 +639,20 @@ function setStatus(id, st, extra) {
 
 /* ---- Détail personne ---- */
 function shareBadge(p) {
-  if (p.scope === 'private') return `<span class="badge lock">${IC.lock}Personnel</span>`;
+  if (p.scope === 'private') return `<span class="badge lock">${IC.lock}Cet appareil</span>`;
+  if (p.scope === 'mine') return `<span class="badge lock">${IC.devices}Mes appareils</span>`;
   const os = memOf(p).filter(u => u !== me);
   return `<span class="badge lock shared">${IC.users}${os.length ? 'Avec ' + esc(listFr(os)) : 'Toi seul'}</span>`;
 }
 function personView() {
   const p = S.people[cur];
   if (!personOk(cur)) { view = 'home'; return homeView(); }
-  const os = membersOf(cur).filter(u => u !== me), mb = budgetOf(cur, me), bt = budgetTotal(cur), ch = chosenTotal(cur), priv = isPriv(cur);
+  const os = membersOf(cur).filter(u => u !== me), mb = budgetOf(cur, me), bt = budgetTotal(cur), ch = chosenTotal(cur), priv = isSolo(cur);
   const rank = { choisi: 0, achete: 1, recupere: 2, idee: 3, offert: 4 };
   const gs = giftsOf(cur).sort((a, b) => (rank[a.status] - rank[b.status]) || b.u - a.u);
   return `<div class="row between"><button class="btn ghost sm" data-act="nav" data-v="home">← Retour</button><div><button class="link" data-act="editPerson" data-id="${cur}">Modifier</button><button class="link" data-act="delPerson" data-id="${cur}">Supprimer</button></div></div>
   <h2 style="margin-top:14px">${esc(p.name)}</h2><div style="margin:-8px 0 14px">${shareBadge(p)}</div>
-  ${priv ? `<p class="note" style="margin-top:-8px">Cadeau personnel : il reste uniquement sur cet appareil, personne d’autre ne le voit jamais.</p>` : ''}
+  ${priv ? `<p class="note" style="margin-top:-8px">${S.people[cur].scope === 'mine' ? 'Visible par toi seul, sur tous tes appareils.' : 'Cadeau personnel : il reste uniquement sur cet appareil, personne d’autre ne le voit jamais.'}</p>` : ''}
   <div class="card paper">
     <div class="row" style="align-items:flex-end">
       <label class="grow" style="margin:0">Mon budget (${esc(me)})<input type="number" min="0" step="1" inputmode="decimal" placeholder="€" value="${mb == null ? '' : mb}" data-bud="${cur}"></label>
@@ -681,9 +685,9 @@ function budgetsView() {
   <div class="card paper"><table class="table"><thead><tr><th>Pour</th><th>Moi</th><th>Autres</th><th>Total</th><th>Retenu</th></tr></thead><tbody>
   ${people.map(p => {
     const bt = budgetTotal(p.id), ch = chosenTotal(p.id);
-    return `<tr><td><b>${esc(p.name)}</b>${p.scope === 'private' ? ` <span class="badge lock">${IC.lock}</span>` : ''}</td>
+    return `<tr><td><b>${esc(p.name)}</b>${p.scope === 'private' ? ` <span class="badge lock">${IC.lock}</span>` : p.scope === 'mine' ? ` <span class="badge lock">${IC.devices}</span>` : ''}</td>
       <td><input class="num" type="number" min="0" step="1" inputmode="decimal" placeholder="€" value="${budgetOf(p.id, me) == null ? '' : budgetOf(p.id, me)}" data-bud="${p.id}"></td>
-      <td>${p.scope === 'private' || !membersOf(p.id).some(o => o !== me && budgetOf(p.id, o) != null) ? '<span class="sub">—</span>' : eur(membersOf(p.id).filter(o => o !== me).reduce((t, o) => t + (budgetOf(p.id, o) || 0), 0))}</td>
+      <td>${isSoloP(p) || !membersOf(p.id).some(o => o !== me && budgetOf(p.id, o) != null) ? '<span class="sub">—</span>' : eur(membersOf(p.id).filter(o => o !== me).reduce((t, o) => t + (budgetOf(p.id, o) || 0), 0))}</td>
       <td><b>${bt ? eur(bt) : '—'}</b></td>
       <td><span class="badge ${bt && ch > bt ? 'bad' : ch ? 'ok' : ''}">${eur(ch)}</span></td></tr>`;
   }).join('')}
@@ -692,7 +696,7 @@ function budgetsView() {
 
 /* ---- Paiements : parts calculées automatiquement ---- */
 function payView() {
-  const gs = live('gifts').filter(g => personOk(g.pid) && !isPriv(g.pid) && g.status !== 'idee');
+  const gs = live('gifts').filter(g => personOk(g.pid) && !isSolo(g.pid) && g.status !== 'idee');
   let h = `<h2>Qui paye quoi</h2>`;
   if (!gs.length) return h + `<div class="empty">${IC.pay}<div>Passe un cadeau partagé en « Retenu » ou « Acheté » : la part de chacun se calcule toute seule. Les cadeaux personnels ne sont pas concernés.</div></div>`;
   const SH = computeShares();
@@ -807,9 +811,10 @@ function personForm(p) {
   const grp = `<div class="row2" style="margin-top:4px"><label>Mon groupe<select name="group"><option value="">Aucun groupe</option>${gs.map(g => `<option value="${g.id}" ${g.id === gcur ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}</select></label><label>Nouveau groupe<input name="newgroup" maxlength="40" placeholder="Ex. Famille"></label></div>`;
   return `<form data-form="person" data-id="${p.id || ''}"><h2>${p.id ? 'Modifier' : 'Nouvelle personne'}</h2>
   <label>Prénom ou nom<input name="name" required maxlength="60" value="${esc(p.name || '')}" placeholder="Maman, Tonton Alex…"></label>
-  ${p.id ? (p.scope === 'private' ? `<p class="sub" style="margin:0 0 6px">Cadeau personnel : visible uniquement sur cet appareil.</p>` : boxes) : `<div style="margin-bottom:6px"><div class="sub" style="margin-bottom:6px;font-weight:500">Pour quel type de cadeau ?</div>
+  ${p.id ? (isSoloP(p) ? `<p class="sub" style="margin:0 0 6px">${p.scope === 'mine' ? 'Visible par toi seul, sur tous tes appareils.' : 'Cadeau personnel : visible uniquement sur cet appareil.'}</p>` : boxes) : `<div style="margin-bottom:6px"><div class="sub" style="margin-bottom:6px;font-weight:500">Pour quel type de cadeau ?</div>
     <label class="opt"><input type="radio" name="scope" value="shared" checked><span><b>Cadeau partagé</b><small>Vous organisez le cadeau et le budget ensemble. Choisis avec qui ci-dessous.</small></span></label>
-    <label class="opt"><input type="radio" name="scope" value="private"><span><b>Cadeau personnel</b><small>Reste sur cet appareil. Personne d’autre ne le voit jamais.</small></span></label>${boxes}</div>`}
+    <label class="opt"><input type="radio" name="scope" value="mine"><span><b>Pour moi seul, sur tous mes appareils</b><small>Visible par toi seul, sur ton téléphone et ton PC. Les autres ne le voient pas.</small></span></label>
+    <label class="opt"><input type="radio" name="scope" value="private"><span><b>Cet appareil seulement</b><small>Ne quitte jamais cet appareil. Personne d’autre ne le voit jamais.</small></span></label>${boxes}</div>`}
   ${grp}
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div></form>`;
 }
@@ -972,11 +977,11 @@ document.addEventListener('submit', e => {
   } else if (f.dataset.form === 'person') {
     const old = S.people[id] || {}, scope = isNew ? (E.scope.value || 'shared') : (old.scope || 'shared');
     const checked = Array.from(f.querySelectorAll('input[name=mem]:checked')).map(x => x.value);
-    if (scope !== 'private' && !checked.length) { const x = $('#sharerr'); if (x) { x.hidden = false; x.scrollIntoView({ block: 'nearest' }); } return; }
+    if (scope === 'shared' && !checked.length) { const x = $('#sharerr'); if (x) { x.hidden = false; x.scrollIntoView({ block: 'nearest' }); } return; }
     const members = USERS.filter(u => u === me || checked.includes(u));
-    put('people', id, scope === 'private' ? { name: E.name.value.trim(), scope, owner: old.owner || me } : { name: E.name.value.trim(), scope, members });
+    put('people', id, scope === 'private' || scope === 'mine' ? { name: E.name.value.trim(), scope, owner: old.owner || me } : { name: E.name.value.trim(), scope, members });
     setGroup(id, E.group.value, E.newgroup.value);
-    closeModal(); render(); if (isNew) toast(scope === 'private' ? 'Personne ajoutée, uniquement sur cet appareil' : 'Personne ajoutée, visible par ' + (listFr(members.filter(u => u !== me)) || 'toi seulement'));
+    closeModal(); render(); if (isNew) toast(scope === 'private' ? 'Personne ajoutée, uniquement sur cet appareil' : scope === 'mine' ? 'Personne ajoutée, visible par toi seul sur tous tes appareils' : 'Personne ajoutée, visible par ' + (listFr(members.filter(u => u !== me)) || 'toi seulement'));
   } else {
     const p = E.price.value, old = S.gifts[id] || {};
     const st = E.status.value, log = (old.log || []).slice(); if (old.status !== st) log.push({ s: st, by: me, at: Date.now() });
