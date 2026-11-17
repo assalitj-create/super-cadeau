@@ -424,6 +424,7 @@ const IC = {
   devices: svg('<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>'),
   users: svg('<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14.5c2.5 0 4 1.5 4 4"/>'),
   more: svg('<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>'),
+  me: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7"/>'),
   fire: svg('<path d="M2.5 5.5h19M5 5.5V21M19 5.5V21M3 21h18"/><path d="M12 18.5c-2 0-3.2-1.2-3.2-2.7 0-1.7 1.6-2.4 1.9-4.2 1.4.9 4.5 2.7 4.5 5.4 0 .9-1.1 1.5-3.2 1.5z"/>'),
   lock: svg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>'),
   tree: svg('<path d="M12 2l-5 7h3l-4 6h4l-3 5h10l-3-5h4l-4-6h3z"/><path d="M12 20v2"/>'),
@@ -778,7 +779,7 @@ function render() {
   const hero = view === 'person'
       ? `<div class="hero"><div class="hrow"><button class="rb" data-act="nav" data-v="home" aria-label="Retour">${IC.back}</button><span><button class="rb" data-act="editPerson" data-id="${cur}" aria-label="Modifier">${IC.edit}</button><button class="rb" data-act="delPerson" data-id="${cur}" aria-label="Supprimer">${IC.trash}</button></span></div><div class="hname">${esc(S.people[cur].name)}</div><div class="hshare">${shareAvs(S.people[cur])}</div></div>`
       : '';
-  hdr.innerHTML = `<div class="top"><h1>${LOGO}Super Cadeau</h1><div class="row" style="gap:12px;flex-wrap:nowrap"><span id="syncdot" class="sync s-${syncState}" title="${SYNC_LABEL[syncState]}"></span><button class="chip-user" data-act="profileForm" aria-label="Ma cheminée, mes informations"><i>${IC.fire}</i>Ma cheminée</button></div></div>` + hero;
+  hdr.innerHTML = `<div class="top"><h1>${LOGO}Super Cadeau</h1><div class="row" style="gap:12px;flex-wrap:nowrap"><span id="syncdot" class="sync s-${syncState}" title="${SYNC_LABEL[syncState]}"></span><button class="chip-user" data-act="profileForm" aria-label="Mon compte, mes informations"><i>${IC.me}</i>Mon compte</button></div></div>` + hero;
   const items = [['home', IC.gift, 'Personnes'], ['ideas', IC.idea, 'Idées'], ['track', IC.track, 'Suivi'], ['budgets', IC.euro, 'Budgets'], ['pay', IC.pay, 'Paiements'], ['more', IC.more, 'Plus']];
   nav.innerHTML = items.map(([k, i, l]) => `<button data-act="nav" data-v="${k}" class="${(view === k || (view === 'person' && k === 'home') || (k === 'more' && (view === 'tickets' || view === 'sync'))) ? 'on' : ''}">${i}${l}</button>`).join('');
   app.innerHTML = ({ home: homeView, person: personView, ideas: ideasView, track: trackView, budgets: budgetsView, pay: payView, more: moreView, tickets: ticketsView, sync: syncView }[view] || homeView)();
