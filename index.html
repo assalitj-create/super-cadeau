@@ -172,6 +172,9 @@ textarea.code{font:12px/1.3 ui-monospace,Menlo,monospace;min-height:90px}
 .balance{background:var(--gold);color:var(--goldink);border-radius:14px;padding:14px 18px;font-weight:800;margin-bottom:16px}
 .note{font-size:13px;color:var(--ink-m);margin:0 0 16px}
 /* ===== DA « Pop cadeau » ===== */
+.stat{min-width:0;padding:12px 12px}.stat b{font-size:20px;white-space:nowrap}.stat span{display:block;overflow-wrap:anywhere}.stats{overflow:hidden}
+body.andrea{--ac:#2B59C3;--ac2:#DCE6FA;--alt:#1E7A52}
+form:has(input[value=private]:checked) .mbox{display:none}
 :root{--bg:#F3C65B;--paper:#fff;--ink:#111;--ink-m:#4D4220;--line:#111;--field:#FFF3CF;--div:rgba(17,17,17,.16);--ac:#1E7A52;--ac2:#DDF2E6;--hd:#F3C65B;--alt:#C8283A;--sans:"Bricolage Grotesque","Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--sh:4px 4px 0 #111}
 body.elsa{--bg:#F3C65B;--ink-m:#4D4220;--line:#111;--field:#FFF3CF;--ac:#C8283A;--ac2:#FCE6E9;--hd:#F3C65B;--alt:#1E7A52}
 body{font-weight:500}
@@ -239,7 +242,8 @@ nav button.on::before{top:-3px;width:44px;height:6px;border-radius:0 0 4px 4px;b
 @media(min-width:600px){.sheet{border:3px solid #111}}
 .toast{background:#111;color:#fff;border:3px solid #fff;border-bottom:3px solid var(--gold);font-weight:800}
 .who button i{border:3px solid #111;font-weight:800}
-.who .j{--c:#1E7A52}.who .e{--c:#C8283A}
+.who .johann{--c:#1E7A52}.who .elsa{--c:#C8283A}.who .andrea{--c:#2B59C3}
+.who{grid-template-columns:repeat(3,1fr);gap:10px}.who button{padding:22px 4px 18px;font-size:15px;border-radius:12px}.who button i{width:56px;height:56px;font-size:24px}
 .note,.sub,.pmeta,.meta,.pv{color:#4D4220}
 .card .sub,.card .pmeta,.gift .meta,.card .note{color:#5A5130}
 .table tfoot td,.table td{color:#111}
@@ -256,8 +260,10 @@ nav button.on::before{top:-3px;width:44px;height:6px;border-radius:0 0 4px 4px;b
 <script>
 "use strict";
 /* ================= État & utilitaires ================= */
-const USERS = ['Johann', 'Elsa'];
-const other = u => USERS.find(x => x !== u);
+const USERS = ['Johann', 'Elsa', 'Andréa'];
+const UCLS = { Johann: 'johann', Elsa: 'elsa', 'Andréa': 'andrea' };
+const others = u => USERS.filter(x => x !== u);
+const listFr = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' et ' + a[a.length - 1] : (a[0] || '');
 const COLL = ['people', 'gifts', 'budgets', 'shares', 'likes'];
 const STATUS = { idee: 'Idée', choisi: 'Retenu', achete: 'Acheté', recupere: 'Récupéré', offert: 'Offert' };
 const ORDER = Object.keys(STATUS), sidx = s => ORDER.indexOf(s);
@@ -302,11 +308,12 @@ const save = () => { persist(); if (typeof scheduleSync === 'function') schedule
 function put(coll, id, obj) { S[coll][id] = Object.assign({}, S[coll][id] || {}, obj, { u: Date.now() }); delete S[coll][id].d; save(); }
 function del(coll, id) { if (S[coll][id]) { S[coll][id].d = 1; S[coll][id].u = Date.now(); save(); } }
 const live = coll => Object.entries(S[coll]).filter(([, v]) => !v.d).map(([id, v]) => Object.assign({ id }, v));
-const visible = p => p.scope !== 'private' || p.owner === me;
+const memOf = p => p.scope === 'private' ? [p.owner] : (Array.isArray(p.members) && p.members.length ? p.members : ['Johann', 'Elsa']);
+const visible = p => p.scope === 'private' ? p.owner === me : memOf(p).includes(me);
 const personOk = pid => { const p = S.people[pid]; return !!(p && !p.d && visible(p)); };
 const peopleList = () => live('people').filter(visible);
 const isPriv = pid => !!(S.people[pid] && S.people[pid].scope === 'private');
-const membersOf = pid => isPriv(pid) ? [S.people[pid].owner] : USERS;
+const membersOf = pid => S.people[pid] ? memOf(S.people[pid]) : USERS;
 /* Les cadeaux personnels ne quittent jamais l'appareil : ils sont filtrés de toute sortie (synchro, export, code). */
 function privRec(c, id, rec) {
   if (c === 'people') return rec.scope === 'private';
@@ -345,11 +352,12 @@ function computeShares() {
     });
     list.filter(g => !g.manual).forEach(g => {
       const P = giftCost(g), cap = u => Math.max(0, rem[u]);
-      const a = { Johann: Math.min(P / 2, cap('Johann')), Elsa: Math.min(P / 2, cap('Elsa')) };
-      let rest = P - a.Johann - a.Elsa;
-      USERS.forEach(u => { if (rest > 0) { const add = Math.min(rest, cap(u) - a[u]); a[u] += add; rest -= add; } });
+      const mem = membersOf(pid), a = {}; USERS.forEach(u => { a[u] = 0; });
+      mem.forEach(u => { a[u] = Math.min(P / mem.length, cap(u)); });
+      let rest = P - mem.reduce((s, u) => s + a[u], 0);
+      mem.forEach(u => { if (rest > 0) { const add = Math.min(rest, cap(u) - a[u]); a[u] += add; rest -= add; } });
       USERS.forEach(u => { a[u] = r2(a[u]); });
-      if (P && rest <= 0.02) a.Elsa = r2(P - a.Johann);
+      if (P && rest <= 0.02) { const last = mem[mem.length - 1]; a[last] = r2(P - mem.slice(0, -1).reduce((s, u) => s + a[u], 0)); }
       USERS.forEach(u => { rem[u] -= a[u]; });
       out[g.id] = Object.assign(a, { short: rest > 0.02 ? r2(rest) : 0 });
     });
@@ -454,19 +462,19 @@ async function handlePwChange(f) {
   } catch (e) { err('Erreur : ' + (e.message || e)); }
 }
 function pwForm() {
-  const o = other(me);
+  const os = others(me);
   return `<form data-form="pwchange"><h2>Mon mot de passe</h2>
   <label>Mot de passe actuel<input name="cur" type="password" autocomplete="current-password" required></label>
   <label>Nouveau mot de passe<input name="pw" type="password" autocomplete="new-password" minlength="4" required></label>
   <label>Confirme le nouveau<input name="pw2" type="password" autocomplete="new-password" minlength="4" required></label>
   <p id="pwerr" class="sub" style="color:var(--bad);margin:0 0 8px;min-height:1em"></p>
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div>
-  <p class="sub" style="margin:16px 0 0">${esc(o)} a oublié son mot de passe ? <button type="button" class="link" data-act="resetOther">Le réinitialiser</button> (${esc(o)} en choisira un nouveau à sa prochaine connexion).</p></form>`;
+  <p class="sub" style="margin:16px 0 0">Quelqu’un a oublié son mot de passe ? ${os.map(o => `<button type="button" class="link" data-act="resetOther" data-u="${o}">Réinitialiser celui de ${esc(o)}</button>`).join(' ')}<br>Il en choisira un nouveau à sa prochaine connexion.</p></form>`;
 }
 
 function render() {
   if (me && S.auth[me] && TOK !== S.auth[me].h) { pending = me; me = null; }
-  document.body.className = (me || pending) ? (me || pending).toLowerCase() : '';
+  document.body.className = (me || pending) ? UCLS[me || pending] : '';
   $('#themecolor').content = '#F3C65B';
   const hdr = $('#hdr'), nav = $('#nav'), app = $('#app');
   if (!me) {
@@ -475,8 +483,7 @@ function render() {
     app.innerHTML = `<div style="display:flex;justify-content:center;margin:18px 0 10px"><div style="width:96px;height:96px;filter:drop-shadow(0 8px 18px rgba(20,80,58,.28))">${LOGO}</div></div>
       <h2 style="margin-top:8px;text-align:center">Qui es-tu ?</h2>
       <p class="sub" style="margin:-8px 0 20px;text-align:center">Chacun a son espace. Vos données se partagent via l’onglet Synchro.</p>
-      <div class="who"><button class="j" data-act="who" data-v="Johann"><i>J</i>Johann</button>
-      <button class="e" data-act="who" data-v="Elsa"><i>E</i>Elsa</button></div>`;
+      <div class="who">${USERS.map(u => `<button class="${UCLS[u]}" data-act="who" data-v="${u}"><i>${u[0]}</i>${u}</button>`).join('')}</div>`;
     return;
   }
   nav.style.display = 'flex';
@@ -564,7 +571,7 @@ function trackView() {
 
 function trackForm(g, preset) {
   const st = preset || g.status || 'idee', bought = sidx(st) >= 2, p = S.people[g.pid];
-  const buyers = isPriv(g.pid) ? [p.owner] : USERS;
+  const buyers = membersOf(g.pid);
   const hist = (g.log || []).slice().reverse();
   return `<form data-form="track" data-id="${g.id}"><h2>Suivi du cadeau</h2>
   <p class="sub" style="margin:-10px 0 16px"><b>${esc(g.t)}</b>${p ? ` pour ${esc(p.name)}` : ''}</p>
@@ -590,16 +597,16 @@ function setStatus(id, st, extra) {
 function personView() {
   const p = S.people[cur];
   if (!personOk(cur)) { view = 'home'; return homeView(); }
-  const o = other(me), mb = budgetOf(cur, me), ob = budgetOf(cur, o), bt = budgetTotal(cur), ch = chosenTotal(cur), priv = isPriv(cur);
+  const os = membersOf(cur).filter(u => u !== me), mb = budgetOf(cur, me), bt = budgetTotal(cur), ch = chosenTotal(cur), priv = isPriv(cur);
   const rank = { choisi: 0, achete: 1, recupere: 2, idee: 3, offert: 4 };
   const gs = giftsOf(cur).sort((a, b) => (rank[a.status] - rank[b.status]) || b.u - a.u);
   return `<div class="row between"><button class="btn ghost sm" data-act="nav" data-v="home">← Retour</button><div><button class="link" data-act="editPerson" data-id="${cur}">Modifier</button><button class="link" data-act="delPerson" data-id="${cur}">Supprimer</button></div></div>
   <h2 style="margin-top:14px">${esc(p.name)}${priv ? ` <span class="badge lock" style="font-size:13px;vertical-align:middle">${IC.lock}Personnel</span>` : ''}</h2>
-  ${priv ? `<p class="note" style="margin-top:-8px">Cadeau personnel : il reste uniquement sur cet appareil, ${esc(o)} ne le voit jamais.</p>` : ''}
+  ${priv ? `<p class="note" style="margin-top:-8px">Cadeau personnel : il reste uniquement sur cet appareil, personne d’autre ne le voit jamais.</p>` : ''}
   <div class="card paper">
     <div class="row" style="align-items:flex-end">
       <label class="grow" style="margin:0">Mon budget (${esc(me)})<input type="number" min="0" step="1" inputmode="decimal" placeholder="€" value="${mb == null ? '' : mb}" data-bud="${cur}"></label>
-      ${priv ? '' : `<div class="grow"><div class="sub">Budget de ${esc(o)}</div><div class="gprice" style="font-size:18px">${ob == null ? 'pas encore défini' : eur(ob)}</div></div>`}
+      ${priv ? '' : os.map(o => `<div class="grow"><div class="sub">Budget de ${esc(o)}</div><div class="gprice" style="font-size:18px">${budgetOf(cur, o) == null ? 'pas encore défini' : eur(budgetOf(cur, o))}</div></div>`).join('')}
     </div>
     <div class="bar"><i class="${ch > bt && bt ? 'over' : ''}" style="width:${bt ? Math.min(100, ch / bt * 100) : 0}%"></i></div>
     <div class="pmeta">Retenu <b>${eur(ch)}</b> sur <b>${bt ? eur(bt) : '—'}</b>${bt ? `, il reste <b>${eur(bt - ch)}</b>` : ''}</div>
@@ -621,17 +628,16 @@ function ideasView() {
 /* ---- Budgets ---- */
 function budgetsView() {
   const people = peopleList().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
-  const o = other(me);
   if (!people.length) return `<h2>Budgets</h2><div class="empty">${IC.euro}<div>Ajoute d’abord une personne.</div></div>`;
-  const totMe = people.reduce((s, p) => s + (budgetOf(p.id, me) || 0), 0), totO = people.reduce((s, p) => s + (budgetOf(p.id, o) || 0), 0);
+  const totMe = people.reduce((s, p) => s + (budgetOf(p.id, me) || 0), 0), totO = people.reduce((s, p) => s + others(me).reduce((t, o) => t + (membersOf(p.id).includes(o) ? (budgetOf(p.id, o) || 0) : 0), 0), 0);
   return `<h2>Budgets</h2>
-  <p class="note">Indique ce que <b>tu</b> peux mettre pour chacun. Le budget de ${esc(o)} apparaît après synchronisation. La part de chacun sur les cadeaux se calcule ensuite toute seule.</p>
-  <div class="card paper"><table class="table"><thead><tr><th>Pour</th><th>Moi (${esc(me)})</th><th>${esc(o)}</th><th>Total</th><th>Retenu</th></tr></thead><tbody>
+  <p class="note">Indique ce que <b>tu</b> peux mettre pour chacun. Les budgets des autres apparaissent après synchronisation. La part de chacun sur les cadeaux se calcule ensuite toute seule.</p>
+  <div class="card paper"><table class="table"><thead><tr><th>Pour</th><th>Moi (${esc(me)})</th><th>Autres</th><th>Total</th><th>Retenu</th></tr></thead><tbody>
   ${people.map(p => {
     const bt = budgetTotal(p.id), ch = chosenTotal(p.id);
     return `<tr><td><b>${esc(p.name)}</b>${p.scope === 'private' ? ` <span class="badge lock">${IC.lock}</span>` : ''}</td>
       <td><input class="num" type="number" min="0" step="1" inputmode="decimal" placeholder="€" value="${budgetOf(p.id, me) == null ? '' : budgetOf(p.id, me)}" data-bud="${p.id}"></td>
-      <td>${p.scope === 'private' || budgetOf(p.id, o) == null ? '<span class="sub">—</span>' : eur(budgetOf(p.id, o))}</td>
+      <td>${p.scope === 'private' || !membersOf(p.id).some(o => o !== me && budgetOf(p.id, o) != null) ? '<span class="sub">—</span>' : eur(membersOf(p.id).filter(o => o !== me).reduce((t, o) => t + (budgetOf(p.id, o) || 0), 0))}</td>
       <td><b>${bt ? eur(bt) : '—'}</b></td>
       <td><span class="badge ${bt && ch > bt ? 'bad' : ch ? 'ok' : ''}">${eur(ch)}</span></td></tr>`;
   }).join('')}
@@ -644,28 +650,29 @@ function payView() {
   let h = `<h2>Qui paye quoi</h2>`;
   if (!gs.length) return h + `<div class="empty">${IC.pay}<div>Passe un cadeau partagé en « Retenu » ou « Acheté » : la part de chacun se calcule toute seule. Les cadeaux personnels ne sont pas concernés.</div></div>`;
   const SH = computeShares();
-  const due = { Johann: 0, Elsa: 0 }, paid = { Johann: 0, Elsa: 0 }, owes = { Johann: 0, Elsa: 0 };
+  const due = {}, paid = {}, debt = {}; USERS.forEach(u => { due[u] = 0; paid[u] = 0; debt[u] = {}; });
   gs.forEach(g => USERS.forEach(u => {
     const a = (SH[g.id] || {})[u] || 0, s = shareOf(g.id, u); due[u] += a;
-    if (g.buyer === u || (s && s.paid)) paid[u] += a; else if (g.buyer && g.buyer !== u) owes[u] += a;
+    if (g.buyer === u || (s && s.paid)) paid[u] += a; else if (g.buyer && g.buyer !== u) debt[u][g.buyer] = (debt[u][g.buyer] || 0) + a;
   }));
-  const net = owes.Elsa - owes.Johann;
-  h += `<div class="stats" style="margin-bottom:16px">${USERS.map(u => `<div class="stat"><b>${eur(due[u])}</b><span>${u}${u === me ? ' (moi)' : ''}, reste ${eur(due[u] - paid[u])}</span></div>`).join('')}</div>`;
-  if (Math.abs(net) > 0.005) h += `<div class="balance">${net > 0 ? 'Elsa doit' : 'Johann doit'} ${eur(Math.abs(net))} ${net > 0 ? 'à Johann' : 'à Elsa'}</div>`;
-  h += `<p class="note">Chaque part est calculée automatiquement : moitié-moitié, ajustée au budget de chacun pour la personne concernée.</p>`;
+  const bal = [];
+  USERS.forEach((u, i) => USERS.slice(i + 1).forEach(v => { const n = (debt[u][v] || 0) - (debt[v][u] || 0); if (Math.abs(n) > 0.005) bal.push(n > 0 ? [u, v, n] : [v, u, -n]); }));
+  h += `<div class="stats" style="margin-bottom:16px">${USERS.filter(u => due[u] > 0 || u === me).map(u => `<div class="stat"><b>${eur(due[u])}</b><span>${u}${u === me ? ' (moi)' : ''}, reste ${eur(due[u] - paid[u])}</span></div>`).join('')}</div>`;
+  bal.forEach(([a, b, n]) => { h += `<div class="balance">${a} doit ${eur(n)} à ${b}</div>`; });
+  h += `<p class="note">Chaque part est calculée automatiquement : à parts égales entre ceux qui offrent le cadeau, ajustée au budget de chacun pour la personne concernée.</p>`;
   const byP = {}; gs.forEach(g => (byP[g.pid] = byP[g.pid] || []).push(g));
   Object.keys(byP).sort((a, b) => S.people[a].name.localeCompare(S.people[b].name, 'fr')).forEach(pid => {
     h += `<h3>${esc(S.people[pid].name)}</h3>`;
     byP[pid].forEach(g => {
-      const P = giftCost(g), sh = SH[g.id] || { Johann: 0, Elsa: 0, short: 0 };
+      const P = giftCost(g), sh = SH[g.id] || { short: 0 };
       const st = !P ? ['warn', 'Prix à renseigner'] : sh.short > 0.01 ? ['bad', `Il manque ${eur(sh.short)}`] : sh.short < -0.01 ? ['bad', `Dépassé de ${eur(-sh.short)}`] : ['ok', 'Réparti'];
       h += `<div class="card paper">
         <div class="row between" style="flex-wrap:nowrap;align-items:flex-start"><div><div class="gtitle">${esc(g.t)}</div><div class="sub">${P ? eur(P) : 'Prix ?'}${g.paid ? ' payé' : ''}${g.store ? ' chez ' + esc(g.store) : ''}, ${STATUS[g.status].toLowerCase()}</div></div><span class="badge ${st[0]}">${st[1]}</span></div>
-        <label style="margin:12px 0 6px">Qui avance l’achat ?<select data-buyer="${g.id}"><option value="">Pas encore décidé</option>${USERS.map(u => `<option ${g.buyer === u ? 'selected' : ''}>${u}</option>`).join('')}</select></label>
-        ${USERS.map(u => {
+        <label style="margin:12px 0 6px">Qui avance l’achat ?<select data-buyer="${g.id}"><option value="">Pas encore décidé</option>${membersOf(pid).map(u => `<option ${g.buyer === u ? 'selected' : ''}>${u}</option>`).join('')}</select></label>
+        ${membersOf(pid).map(u => {
           const s = shareOf(g.id, u), b = budgetOf(g.pid, u);
           return `<div class="share-row"><div><b>${u}${u === me ? ' (moi)' : ''}</b><div class="sub">budget ${b == null ? 'non défini' : eur(b)}</div></div>
-            ${g.manual ? `<input type="number" min="0" step="0.01" inputmode="decimal" value="${sh[u]}" data-share="${g.id}|${u}">` : `<span class="amt">${eur(sh[u])}</span>`}
+            ${g.manual ? `<input type="number" min="0" step="0.01" inputmode="decimal" value="${sh[u] || 0}" data-share="${g.id}|${u}">` : `<span class="amt">${eur(sh[u] || 0)}</span>`}
             <label>${g.buyer === u ? '<span class="badge ok">avancé</span>' : `<input type="checkbox" data-paid="${g.id}|${u}" ${s && s.paid ? 'checked' : ''}> payé`}</label></div>`;
         }).join('')}
         <div class="actions">${g.manual ? `<button class="btn sec sm" data-act="manualOff" data-id="${g.id}">Revenir au calcul automatique</button>` : `<button class="link" data-act="manualOn" data-id="${g.id}">Ajuster à la main</button>`}</div></div>`;
@@ -680,7 +687,7 @@ function moreView() {
   return `<h2>Plus</h2>
   <button class="card pcard" data-act="nav" data-v="tickets"><div class="thumbs"><i>${IC.ticket}</i></div><div class="grow"><div class="pname">Tickets</div><div class="pmeta">Signaler un problème ou proposer une amélioration${open ? `, ${open} ouvert${open > 1 ? 's' : ''}` : ''}</div></div></button>
   <button class="card pcard" data-act="pwForm"><div class="thumbs"><i>${IC.lock}</i></div><div class="grow"><div class="pname">Mon mot de passe</div><div class="pmeta">Changer le mot de passe de ${esc(me)}</div></div></button>
-  <button class="card pcard" data-act="nav" data-v="sync"><div class="thumbs"><i>${IC.sync}</i></div><div class="grow"><div class="pname">Synchronisation</div><div class="pmeta">${SYNC_LABEL[syncState]}, partage avec l’autre personne et sauvegardes</div></div></button>`;
+  <button class="card pcard" data-act="nav" data-v="sync"><div class="thumbs"><i>${IC.sync}</i></div><div class="grow"><div class="pname">Synchronisation</div><div class="pmeta">${SYNC_LABEL[syncState]}, sauvegardes</div></div></button>`;
 }
 
 /* ---- Tickets ---- */
@@ -693,7 +700,7 @@ function ticketsView() {
   const nOpen = all.filter(t => t.status !== 'resolu').length;
   return `<div class="row between"><button class="btn ghost sm" data-act="nav" data-v="more">← Retour</button><button class="btn" data-act="addTicket">Nouveau ticket</button></div>
   <h2 style="margin-top:14px">Tickets</h2>
-  <p class="note" style="margin-top:-8px">Un problème, une idée pour améliorer Super Cadeau ? Note-le ici, l’autre le voit aussi.</p>
+  <p class="note" style="margin-top:-8px">Un problème, une idée pour améliorer Super Cadeau ? Note-le ici, les autres le voient aussi.</p>
   <div class="fchips">${[['open', `Ouverts (${nOpen})`], ['done', 'Résolus'], ['all', 'Tous']].map(([k, l]) => `<button class="${fTicket === k ? 'on' : ''}" data-act="tfilter" data-v="${k}">${l}</button>`).join('')}</div>
   ${list.length ? list.map(t => `<div class="card tk">
     <div class="tkhead"><span class="badge ${t.type === 'bug' ? 'bad' : 'ok'}">${TTYPE[t.type] || 'Ticket'}</span><span class="sub">par ${esc(t.by || '?')}, ${t.c ? fmtDT(t.c) : ''}</span></div>
@@ -748,11 +755,13 @@ function syncView() {
 /* ================= Formulaires ================= */
 function personForm(p) {
   p = p || {};
+  const os = others(me), cur = p.id ? memOf(p) : USERS;
+  const boxes = `<div class="mbox"><div class="sub" style="margin:8px 0 6px;font-weight:500">Partagé avec</div><div class="chips">${os.map(o => `<label class="chip"><input type="checkbox" name="mem" value="${o}" ${cur.includes(o) ? 'checked' : ''}>${esc(o)}</label>`).join('')}</div></div>`;
   return `<form data-form="person" data-id="${p.id || ''}"><h2>${p.id ? 'Modifier' : 'Nouvelle personne'}</h2>
   <label>Prénom ou nom<input name="name" required maxlength="60" value="${esc(p.name || '')}" placeholder="Maman, Tonton Alex…"></label>
-  ${p.id ? `<p class="sub" style="margin:0 0 6px">${p.scope === 'private' ? 'Cadeau personnel : visible uniquement sur cet appareil.' : `Cadeau partagé avec ${esc(other(me))}.`}</p>` : `<div style="margin-bottom:6px"><div class="sub" style="margin-bottom:6px;font-weight:500">Pour quel type de cadeau ?</div>
-    <label class="opt"><input type="radio" name="scope" value="shared" checked><span><b>Cadeau partagé avec ${esc(other(me))}</b><small>Apparaît chez ${esc(other(me))}, vous organisez le cadeau et le budget ensemble.</small></span></label>
-    <label class="opt"><input type="radio" name="scope" value="private"><span><b>Cadeau personnel</b><small>Reste sur cet appareil. ${esc(other(me))} ne le voit jamais.</small></span></label></div>`}
+  ${p.id ? (p.scope === 'private' ? `<p class="sub" style="margin:0 0 6px">Cadeau personnel : visible uniquement sur cet appareil.</p>` : boxes) : `<div style="margin-bottom:6px"><div class="sub" style="margin-bottom:6px;font-weight:500">Pour quel type de cadeau ?</div>
+    <label class="opt"><input type="radio" name="scope" value="shared" checked><span><b>Cadeau partagé</b><small>Vous organisez le cadeau et le budget ensemble. Choisis avec qui ci-dessous.</small></span></label>
+    <label class="opt"><input type="radio" name="scope" value="private"><span><b>Cadeau personnel</b><small>Reste sur cet appareil. Personne d’autre ne le voit jamais.</small></span></label>${boxes}</div>`}
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div></form>`;
 }
 function giftForm(g, pid) {
@@ -824,7 +833,7 @@ const actions = {
   retryAuth() { syncNow(true); },
   switch() { me = null; pending = null; TOK = ''; try { localStorage.removeItem('cadeaux.me'); localStorage.removeItem('cadeaux.tok'); } catch (e) {} render(); },
   pwForm() { openModal(pwForm()); },
-  resetOther() { const o = other(me); confirmDlg(`Réinitialiser le mot de passe de ${o} ?`, () => { S.auth[o] = { h: '', s: '', u: Date.now() }; save(); closeModal(); toast(`${o} choisira un nouveau mot de passe`); }, 'Réinitialiser'); },
+  resetOther(t) { const o = t.dataset.u; confirmDlg(`Réinitialiser le mot de passe de ${o} ?`, () => { S.auth[o] = { h: '', s: '', u: Date.now() }; save(); closeModal(); toast(`${o} choisira un nouveau mot de passe`); }, 'Réinitialiser'); },
   nav(t) { view = t.dataset.v; cur = null; render(); window.scrollTo(0, 0); },
   open(t) { view = 'person'; cur = t.dataset.id; render(); window.scrollTo(0, 0); },
   closeModal: closeModal,
@@ -898,15 +907,17 @@ document.addEventListener('submit', e => {
   if (f.dataset.form === 'ticket') {
     const old = S.tickets[id] || {};
     put('tickets', id, { type: E.type.value, t: E.t.value.trim(), desc: E.desc.value.trim(), by: old.by || me, status: old.status || 'ouvert', c: old.c || Date.now() });
-    closeModal(); render(); toast(isNew ? 'Ticket créé, l’autre le verra' : 'Ticket modifié');
+    closeModal(); render(); toast(isNew ? 'Ticket créé, les autres le verront' : 'Ticket modifié');
   } else if (f.dataset.form === 'track') {
     const pd = E.paid.value.trim();
     setStatus(id, E.status.value, { buyer: E.buyer.value, bdate: E.bdate.value, paid: pd === '' ? null : Math.max(0, parseFloat(pd) || 0), store: E.store.value.trim(), order: E.order.value.trim() });
     closeModal(); render(); toast('Suivi enregistré');
   } else if (f.dataset.form === 'person') {
     const old = S.people[id] || {}, scope = isNew ? (E.scope.value || 'shared') : (old.scope || 'shared');
-    put('people', id, scope === 'private' ? { name: E.name.value.trim(), scope, owner: old.owner || me } : { name: E.name.value.trim(), scope });
-    closeModal(); render(); if (isNew) toast(scope === 'private' ? 'Personne ajoutée, uniquement sur cet appareil' : 'Personne ajoutée, visible par ' + other(me));
+    const checked = Array.from(f.querySelectorAll('input[name=mem]:checked')).map(x => x.value);
+    const members = USERS.filter(u => u === me || checked.includes(u));
+    put('people', id, scope === 'private' ? { name: E.name.value.trim(), scope, owner: old.owner || me } : { name: E.name.value.trim(), scope, members });
+    closeModal(); render(); if (isNew) toast(scope === 'private' ? 'Personne ajoutée, uniquement sur cet appareil' : 'Personne ajoutée, visible par ' + (listFr(members.filter(u => u !== me)) || 'toi seulement'));
   } else {
     const p = E.price.value, old = S.gifts[id] || {};
     const st = E.status.value, log = (old.log || []).slice(); if (old.status !== st) log.push({ s: st, by: me, at: Date.now() });
