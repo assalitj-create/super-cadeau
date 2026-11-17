@@ -747,7 +747,6 @@ function colorSection() {
   <div class="swatches">${pal.map(c => { const o = used[c.toLowerCase()]; return `<button type="button" class="sw ${c.toLowerCase() === cur ? 'on' : ''}" style="--c:${c}" data-act="setColor" data-v="${c}" ${o ? 'disabled' : ''} aria-label="${c}${o ? ', utilisée par ' + esc(o) : ''}"><i>${esc(me[0])}</i><small>${o ? esc(o) : c.toLowerCase() === cur ? 'Ma couleur' : ''}</small></button>`; }).join('')}</div>`;
 }
 function profileForm() {
-  const os = others(me);
   return `<h2>Mon profil</h2>${colorSection()}
   <form data-form="pwchange"><h3 class="psec">Mon mot de passe</h3>
   <label>Mot de passe actuel<input name="cur" type="password" autocomplete="current-password" required></label>
@@ -755,7 +754,7 @@ function profileForm() {
   <label>Confirme le nouveau<input name="pw2" type="password" autocomplete="new-password" minlength="4" required></label>
   <p id="pwerr" class="sub" style="color:var(--bad);margin:0 0 8px;min-height:1em"></p>
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Fermer</button><button class="btn">Changer le mot de passe</button></div>
-  <p class="sub" style="margin:16px 0 0">Quelqu’un a oublié son mot de passe ? ${os.map(o => `<button type="button" class="link" data-act="resetOther" data-u="${o}">Réinitialiser celui de ${esc(o)}</button>`).join(' ')}<br>Il en choisira un nouveau à sa prochaine connexion.</p></form>
+  </form>
   <div class="actions" style="margin-top:14px;border-top:1px solid var(--line,#d6e0ee);padding-top:14px"><button type="button" class="btn sec" data-act="switch">Se déconnecter</button></div>`;
 }
 
@@ -1268,7 +1267,6 @@ const actions = {
   groupsForm() { openModal(groupsForm()); },
   gfilter(t) { fGroup = t.dataset.v; render(); },
   delGroup(t) { const id = t.dataset.id, g = S.groups[id]; confirmDlg(`Supprimer le groupe « ${g.name} » ? Les personnes ne sont pas supprimées, elles passent « Sans groupe ».`, () => { del('groups', id); closeModal(); render(); }, 'Supprimer'); },
-  resetOther(t) { const o = t.dataset.u; confirmDlg(`Réinitialiser le mot de passe de ${o} ?`, () => { S.auth[o] = { h: '', s: '', u: Date.now() }; save(); closeModal(); toast(`${o} choisira un nouveau mot de passe`); }, 'Réinitialiser'); },
   nav(t) { view = t.dataset.v; cur = null; render(); window.scrollTo(0, 0); },
   open(t) { view = 'person'; cur = t.dataset.id; render(); window.scrollTo(0, 0); },
   closeModal: closeModal,
