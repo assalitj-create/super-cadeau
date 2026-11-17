@@ -783,7 +783,7 @@ function render() {
       ? `<div class="hero"><div class="hrow"><button class="rb" data-act="nav" data-v="home" aria-label="Retour">${IC.back}</button><span><button class="rb" data-act="editPerson" data-id="${cur}" aria-label="Modifier">${IC.edit}</button><button class="rb" data-act="delPerson" data-id="${cur}" aria-label="Supprimer">${IC.trash}</button></span></div><div class="hname">${esc(S.people[cur].name)}</div><div class="hshare">${shareAvs(S.people[cur])}</div></div>`
       : '';
   hdr.innerHTML = `<div class="top"><h1>${LOGO_W}Super Cadeau</h1><div class="row" style="gap:12px;flex-wrap:nowrap"><button class="chip-user" data-act="profileForm" aria-label="Mon compte, mes informations"><i>${IC.me}</i>Mon compte</button></div></div>` + hero;
-  const items = [['home', IC.gift, 'Qui'], ['ideas', IC.idea, 'Quoi'], ['track', IC.track, 'Quand'], ['budgets', IC.euro, 'Combien'], ['pay', IC.pay, 'Quipéquoi'], ['more', IC.more, 'Plus']];
+  const items = [['home', IC.gift, 'Qui'], ['ideas', IC.idea, 'Quoi'], ['track', IC.track, 'Quand'], ['budgets', IC.euro, 'Combien'], ['pay', IC.pay, 'Comment'], ['more', IC.more, 'Plus']];
   nav.innerHTML = items.map(([k, i, l]) => `<button data-act="nav" data-v="${k}" class="${(view === k || (view === 'person' && k === 'home') || (k === 'more' && (view === 'tickets' || view === 'sync'))) ? 'on' : ''}">${i}${l}</button>`).join('');
   app.innerHTML = ({ home: homeView, person: personView, ideas: ideasView, track: trackView, budgets: budgetsView, pay: payView, more: moreView, tickets: ticketsView, sync: syncView }[view] || homeView)();
 }
