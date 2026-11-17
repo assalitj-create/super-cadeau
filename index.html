@@ -364,6 +364,12 @@ header.gate .dot{position:absolute;border-radius:50%}
 .vbar i{display:block;height:100%;background:var(--red)}
 .votepill{background:var(--gold);color:var(--goldink);font-weight:800;font-size:11.5px;padding:2px 9px;border-radius:99px;margin-left:8px;white-space:nowrap}
 .votepill.soft{background:#fff;border:1.5px solid var(--gold)}
+.swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.sw{border:1.5px solid var(--line);background:#fff;border-radius:16px;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;color:var(--ink-m)}
+.sw i{font-style:normal;width:44px;height:44px;border-radius:50%;background:var(--c);color:#fff;display:flex;align-items:center;justify-content:center;font:800 18px var(--sans)}
+.sw small{font:700 11.5px/1.1 var(--sans);min-height:13px}
+.sw.on{border:2px solid var(--pine);color:var(--ink)}
+.sw:disabled{opacity:.45;cursor:default}
 @media(prefers-reduced-motion:reduce){.gpanel,.who.picking button.sel::after{animation:none}.who button,.pcard,.btn{transition:none}.spin{animation-duration:2s}}
 
 </style>
@@ -422,7 +428,13 @@ const IC = {
   trash: svg('<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13M10 11v6M14 11v6"/>')
 };
 const UC = { Johann: '#1E6B4A', Elsa: '#A96F00', 'Andréa': '#2B59C3' };
-const colorOf = n => UC[n] || userColor(n) || '#555';
+const colorOf = n => userColor(n) || UC[n] || '#555';
+const PALETTE = ['#1E6B4A', '#A96F00', '#2B59C3', '#7B3FC4', '#B83280', '#0E7490', '#C2410C', '#5B6B1F', '#3F5BD8', '#475569', '#8A4B2A', '#0F766E'];
+function setUserColor(name, color) {
+  const e = Object.entries(S.users || {}).find(([, u]) => u && !u.d && u.name === name);
+  if (e) put('users', e[0], { color }); else put('users', 'col-' + name, { name, color, c: Date.now(), base: 1 });
+  rebuildUsers();
+}
 const av = n => `<span class="av" style="background:${colorOf(n)}">${esc((n || '?')[0].toUpperCase())}</span>`;
 const BOXES = [['#D8392B', '#B72B20', '#F4C542'], ['#1E6B4A', '#16553A', '#D8392B'], ['#F4C542', '#D9A41C', '#1E6B4A'], ['#2B59C3', '#1F4496', '#F4C542'], ['#E8738A', '#C9566C', '#FFF1D6']];
 function boxSvg(name) {
@@ -577,7 +589,7 @@ function enter(U, h) {
 }
 function gateView() {
   const U = pending, mode = gateMode(); shownMode = mode;
-  const row = `<div class="who"><div class="pick ${UCLS[U] || ''}" ${UCLS[U] ? '' : `style="--c:${userColor(U) || '#555'}"`}><i>${esc(U[0].toUpperCase())}</i>${esc(U)}</div></div>`;
+  const row = `<div class="who"><div class="pick ${UCLS[U] || ''}" style="--c:${colorOf(U)}"><i>${esc(U[0].toUpperCase())}</i>${esc(U)}</div></div>`;
   const back = `<div style="text-align:center;margin-top:16px"><button class="link" data-act="notme">Ce n’est pas ${esc(U)}</button></div>`;
   const top = `<h2 class="qui">Qui es-tu ?</h2>` + row;
   let body;
@@ -639,6 +651,13 @@ function inviteView(name) {
   <div class="row"><a class="btn sec sm" style="text-decoration:none" href="sms:?&body=${enc}">SMS</a><a class="btn sec sm" style="text-decoration:none" href="https://wa.me/?text=${enc}" target="_blank" rel="noopener">WhatsApp</a></div>
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Fermer</button></div>`;
 }
+function colorForm() {
+  const used = {}; USERS.forEach(u => { if (u !== me) used[colorOf(u).toLowerCase()] = u; });
+  const cur = colorOf(me).toLowerCase(), pal = PALETTE.some(c => c.toLowerCase() === cur) ? PALETTE : [colorOf(me)].concat(PALETTE);
+  return `<h2>Ma couleur</h2><p class="sub" style="margin-top:-8px">Elle colore tes initiales et ton espace, et les autres la voient aussi.</p>
+  <div class="swatches">${pal.map(c => { const o = used[c.toLowerCase()]; return `<button type="button" class="sw ${c.toLowerCase() === cur ? 'on' : ''}" style="--c:${c}" data-act="setColor" data-v="${c}" ${o ? 'disabled' : ''} aria-label="${c}${o ? ', utilisée par ' + esc(o) : ''}"><i>${esc(me[0])}</i><small>${o ? esc(o) : c.toLowerCase() === cur ? 'Ma couleur' : ''}</small></button>`; }).join('')}</div>
+  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Fermer</button></div>`;
+}
 function pwForm() {
   const os = others(me);
   return `<form data-form="pwchange"><h2>Mon mot de passe</h2>
@@ -653,7 +672,7 @@ function pwForm() {
 function render() {
   if (me && S.auth[me] && TOK !== S.auth[me].h) { pending = me; me = null; }
   document.body.className = (me || pending) ? (UCLS[me || pending] || 'dyn') : '';
-  { const c = (me || pending) && !UCLS[me || pending] ? userColor(me || pending) : '', st = document.body.style;
+  { const c = (me || pending) ? userColor(me || pending) : '', st = document.body.style;
     if (c) { st.setProperty('--ac', c); st.setProperty('--ac2', 'color-mix(in srgb, ' + c + ' 18%, #fff)'); } else { st.removeProperty('--ac'); st.removeProperty('--ac2'); } }
   $('#themecolor').content = '#D8392B';
   const hdr = $('#hdr'), nav = $('#nav'), app = $('#app');
@@ -663,7 +682,7 @@ function render() {
     hdr.innerHTML = `<div class="hero"><div class="glogo">${LOGO}</div><div class="gt">Super Cadeau</div><div class="gs">Les cadeaux de Noël, en famille</div><i class="dot" style="left:18px;bottom:14px;width:10px;height:10px;background:#F4C542"></i><i class="dot" style="left:44px;bottom:34px;width:7px;height:7px;background:#fff"></i><i class="dot" style="right:22px;bottom:20px;width:10px;height:10px;background:#fff"></i><i class="dot" style="right:52px;bottom:40px;width:7px;height:7px;background:#F4C542"></i></div>`;
     nav.style.display = 'none';
     if (pending) { app.innerHTML = gateView(); return; }
-    app.innerHTML = `<div class="gwrap"><h2 class="qui">Qui es-tu ?</h2><div class="who">${USERS.map(u => `<button class="${UCLS[u] || ''}" ${UCLS[u] ? '' : `style="--c:${userColor(u) || '#555'}"`} data-act="who" data-v="${u}"><i>${esc(u[0].toUpperCase())}</i>${esc(u)}</button>`).join('')}</div></div>`;
+    app.innerHTML = `<div class="gwrap"><h2 class="qui">Qui es-tu ?</h2><div class="who">${USERS.map(u => `<button class="${UCLS[u] || ''}" style="--c:${colorOf(u)}" data-act="who" data-v="${u}"><i>${esc(u[0].toUpperCase())}</i>${esc(u)}</button>`).join('')}</div></div>`;
     return;
   }
   nav.style.display = 'flex';
@@ -989,6 +1008,7 @@ function moreView() {
   return `<h2>Plus</h2>
   <button class="card pcard" data-act="nav" data-v="tickets"><div class="thumbs"><i>${IC.ticket}</i></div><div class="grow"><div class="pname">Tickets</div><div class="pmeta">Signaler un problème ou proposer une amélioration${open ? `, ${open} ouvert${open > 1 ? 's' : ''}` : ''}</div></div></button>
   <button class="card pcard" data-act="addUser"><div class="thumbs"><i>${IC.users}</i></div><div class="grow"><div class="pname">Ajouter un utilisateur</div><div class="pmeta">Invite quelqu’un à utiliser Super Cadeau avec vous</div></div></button>
+  <button class="card pcard" data-act="colorForm"><div class="thumbs"><i style="background:${colorOf(me)};color:#fff;font-style:normal;font-weight:800;font-size:18px">${esc(me[0])}</i></div><div class="grow"><div class="pname">Ma couleur</div><div class="pmeta">Choisir la couleur de ton profil</div></div></button>
   <button class="card pcard" data-act="pwForm"><div class="thumbs"><i>${IC.lock}</i></div><div class="grow"><div class="pname">Mon mot de passe</div><div class="pmeta">Changer le mot de passe de ${esc(me)}</div></div></button>
   <button class="card pcard" data-act="nav" data-v="sync"><div class="thumbs"><i>${IC.sync}</i></div><div class="grow"><div class="pname">Synchronisation</div><div class="pmeta">${SYNC_LABEL[syncState]}, sauvegardes</div></div></button>`;
 }
@@ -1147,6 +1167,8 @@ const actions = {
   retryAuth() { syncNow(true); },
   switch() { me = null; pending = null; TOK = ''; try { localStorage.removeItem('cadeaux.me'); localStorage.removeItem('cadeaux.tok'); } catch (e) {} render(); },
   pwForm() { openModal(pwForm()); },
+  colorForm() { openModal(colorForm()); },
+  setColor(t) { setUserColor(me, t.dataset.v); closeModal(); render(); toast('Couleur modifiée'); },
   makeMine(t) { const id = t.dataset.id; put('people', id, { scope: 'mine' }); closeModal(); render(); toast('Visible par toi seul, sur tous tes appareils'); },
   groupsForm() { openModal(groupsForm()); },
   gfilter(t) { fGroup = t.dataset.v; render(); },
