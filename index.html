@@ -473,6 +473,17 @@ header.gate .dot{display:none}
 .addtile{border:2px dashed #9AA9BD;border-radius:16px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:150px;color:var(--ink-m);font:700 14px var(--sans);cursor:pointer;text-align:center;padding:12px}
 .addtile svg{width:26px;height:26px}
 .addtile:hover{border-color:var(--red);color:var(--redd)}
+
+/* accueil : rangée de bulles */
+.rail{display:flex;gap:12px;overflow-x:auto;padding:8px 2px 12px;margin:0 -2px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.rail::-webkit-scrollbar{display:none}
+.bub{flex:none;width:72px;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;padding:0;cursor:pointer;font:700 12px/1.2 var(--sans);color:var(--ink);text-align:center}
+.bub .bb{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 24px var(--sans);font-style:normal;box-sizing:border-box;transition:transform .15s,box-shadow .15s}
+.bub .bb svg{width:26px;height:26px}
+.bub span{display:block;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bub:active .bb{transform:scale(.92)}
+.bub.on .bb{box-shadow:0 0 0 3px var(--bg,#EDF3FA),0 0 0 6px #0F3B2E}
+.bub.on span{font-weight:800}
 </style>
 </head>
 <body>
@@ -1035,15 +1046,25 @@ function homeView() {
   const mine = people.reduce((s, p) => s + (budgetOf(p.id, me) || 0), 0);
   const groups = myGroups();
   if (fGroup !== 'all' && fGroup !== 'none' && !groups.some(g => g.id === fGroup)) fGroup = 'all';
-  let h = bannerHtml() + `<div class="stats"><div class="stat"><b>${people.length}</b><span>personnes</span></div><div class="stat"><b>${gifts.length}</b><span>idées</span></div><div class="stat"><b>${eur(mine)}</b><span>mon budget</span></div></div>
-  <button class="card pcard" data-act="nav" data-v="wishes" style="margin-top:14px"><div class="thumbs"><i>${IC.gift}</i></div><div class="grow"><div class="pname">Listes de souhaits</div><div class="pmeta">Ce que chacun aimerait recevoir</div></div></button>
-  <div class="row between" style="margin:18px 0 12px"><h3 style="margin:0">À qui offrir un cadeau ?</h3><button class="btn" data-act="addPerson">Ajouter une personne</button></div>`;
+  let h = bannerHtml();
+  const PAL = [['#FBE0DC', '#B72B20'], ['#DCE6F8', '#2B59C3'], ['#E3F2E9', '#1E6B46'], ['#FFF1D6', '#8A5600'], ['#EADDF7', '#6B3FA0']];
+  const bub = (act, v, ico, label, st, on) => `<button class="bub ${on ? 'on' : ''}" data-act="${act}" ${v != null ? `data-v="${v}"` : ''}><i class="bb" style="${st}">${ico}</i><span>${esc(label)}</span></button>`;
+  const plus = svg('<path d="M12 5v14M5 12h14"/>');
+  let rail = '';
+  if (people.length && groups.length) {
+    rail += bub('gfilter', 'all', IC.gift, 'Tous', 'background:#0F3B2E;color:#F4C542', fGroup === 'all');
+    groups.forEach((g, i) => { const c = PAL[i % PAL.length]; rail += bub('gfilter', g.id, esc(((String(g.name || '?').trim().split(/\s+/).pop() || '?')[0]).toUpperCase()), g.name, `background:${c[0]};color:${c[1]}`, fGroup === g.id); });
+    if (people.some(p => !groupOf(p.id))) rail += bub('gfilter', 'none', '·', 'Sans groupe', 'background:#E6ECF4;color:#4A5B73', fGroup === 'none');
+  }
+  rail += bub('nav', 'wishes', IC.gift, 'Souhaits', 'background:#FBE0DC;color:#B72B20', false);
+  rail += bub('addPerson', null, plus, 'Ajouter', 'background:#fff;border:2px dashed #9AA9BD;color:#4A5B73', false);
+  if (!groups.length) rail += bub('groupsForm', null, plus, 'Groupes', 'background:#fff;border:2px dashed #9AA9BD;color:#4A5B73', false);
+  h += `<div class="row between" style="margin:6px 0 2px"><h3 style="margin:0">À qui offrir ?</h3>${groups.length ? '<button class="link" data-act="groupsForm">Gérer les groupes</button>' : ''}</div><div class="rail">${rail}</div>`;
   if (!people.length) return h + `<div class="empty">${IC.gift}<div>Ajoute la première personne à qui vous voulez faire un cadeau.</div></div>`;
-  const chip = (k, l) => `<button class="${fGroup === k ? 'on' : ''}" data-act="gfilter" data-v="${k}">${esc(l)}</button>`;
-  h += `<div class="fchips">${groups.length ? chip('all', 'Tous') + groups.map(g => chip(g.id, g.name)).join('') + chip('none', 'Sans groupe') : ''}<button data-act="groupsForm" style="background:transparent;border-style:dashed">${groups.length ? 'Gérer mes groupes' : '+ Créer des groupes pour trier'}</button></div>`;
-  if (!groups.length) return h + people.map(personCard).join('');
-  const sec = (title, list) => list.length ? `<h3 style="margin:18px 0 10px">${esc(title)} <span class="sub">(${list.length})</span></h3>` + list.map(personCard).join('') : '';
-  if (fGroup === 'all') return h + groups.map(g => sec(g.name, people.filter(p => groupOf(p.id) === g.id))).join('') + sec('Sans groupe', people.filter(p => !groupOf(p.id)));
+  if (!groups.length || fGroup === 'all') {
+    const order = groups.map(g => people.filter(p => groupOf(p.id) === g.id)).flat().concat(groups.length ? people.filter(p => !groupOf(p.id)) : people);
+    return h + order.map(personCard).join('');
+  }
   const list = people.filter(p => fGroup === 'none' ? !groupOf(p.id) : groupOf(p.id) === fGroup);
   return h + (list.length ? list.map(personCard).join('') : `<div class="empty">${IC.gift}<div>Aucune personne dans ce groupe. Ouvre une personne puis « Modifier » pour l’y ranger.</div></div>`);
 }
