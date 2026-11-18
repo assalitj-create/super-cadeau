@@ -1147,7 +1147,9 @@ const askOf = pid => live('votes').filter(v => v.pid === pid && v.status === 'as
 const openVoteOf = pid => live('votes').filter(v => v.pid === pid && voteLive(v)).sort((a, b) => (b.c || 0) - (a.c || 0))[0] || null;
 const voteCands = v => (v.cands || []).filter(id => S.gifts[id] && !S.gifts[id].d);
 const ballotOf = (vid, u) => { const b = S.ballots[vid + '|' + u]; return b && !b.d && Array.isArray(b.r) ? b : null; };
+const overBudget = pid => { const bt = budgetTotal(pid); return bt > 0 && giftsOf(pid).reduce((t, g) => t + (g.price != null && g.price !== '' ? +g.price || 0 : 0), 0) > bt; };
 function tieIdeas(pid) {
+  if (!overBudget(pid)) return null; /* pas de départage tant que le budget n'est pas dépassé */
   const mem = membersOf(pid); if (isSolo(pid) || mem.length < 2) return null;
   const ideas = giftsOf(pid).filter(g => g.status === 'idee'); if (ideas.length < 2) return null;
   const cnt = g => mem.filter(u => likedBy(g.id, u)).length, top = Math.max(...ideas.map(cnt)); if (top < 1) return null;
