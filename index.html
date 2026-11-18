@@ -354,6 +354,21 @@ header.gate .dot{position:absolute;border-radius:50%}
 .setup span{font-size:13px;color:#4a5a73}
 nav button{position:relative}
 .ndot{position:absolute;top:4px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--red);color:#fff;font:700 10px/16px sans-serif;text-align:center;font-style:normal}
+.msec{font-size:14px;font-weight:800;color:var(--ink-m);margin:18px 4px 8px;letter-spacing:0}
+.mlist{background:#fff;border:1px solid #d6e0ee;border-radius:18px;overflow:hidden}
+.mrow{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;text-align:left;background:none;border:0;border-bottom:1px solid #e4ecf6;cursor:pointer;font:inherit;color:inherit;min-height:60px}
+.mrow:last-child{border-bottom:0}
+.mrow:active{background:#f3f7fc}
+.mico{flex:none;width:38px;height:38px;border-radius:50%;background:#FBE0DC;color:#B72B20;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.mico svg{width:20px;height:20px}
+.mtxt{flex:1;min-width:0;display:flex;flex-direction:column}
+.mtxt b{font-size:16px;font-weight:800;letter-spacing:-.01em}
+.mtxt small{font-size:13px;color:var(--ink-m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mchev{flex:none;font-size:24px;color:#9aa9bf;line-height:1}
+.mbadge{flex:none;min-width:22px;padding:2px 8px;border-radius:12px;background:#D8392B;color:#fff;font-size:12px;font-weight:800;text-align:center}
+.mbadge.warn{background:#F4C542;color:#4a3500}
+.mbadge.soft{background:#e4ecf6;color:#14243B}
+.mlogout{display:block;margin:22px auto 8px;background:none;border:0;color:var(--ink-m);font:600 14px var(--sans);text-decoration:underline;cursor:pointer;padding:8px}
 .wimg{width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:10px;margin-bottom:8px;display:block}
 .psec{font-size:16px;font-weight:800;margin:18px 0 8px}
 h2+.psec{margin-top:6px}
@@ -1218,14 +1233,23 @@ function wishForm(w) {
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div></form>`;
 }
 function moreView() {
-  const open = live('tickets').filter(t => t.status !== 'resolu').length;
+  const open = live('tickets').filter(t => t.status !== 'resolu').length, un = unreadN(), miss = missingSettings();
+  const row = (act, data, ico, title, sub, badge) => `<button class="mrow" data-act="${act}" ${data || ''}><span class="mico">${ico}</span><span class="mtxt"><b>${title}</b><small>${sub}</small></span>${badge || ''}<span class="mchev" aria-hidden="true">›</span></button>`;
+  const av = `<i style="background:${colorOf(me)};color:#fff;font-style:normal;font-weight:800;font-size:15px;width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center">${esc(me[0])}</i>`;
   return `<h2>Plus</h2>
-  <button class="card pcard" data-act="nav" data-v="wishes"><div class="thumbs"><i>${IC.gift}</i></div><div class="grow"><div class="pname">Listes de souhaits</div><div class="pmeta">Note tes envies et consulte celles des autres</div></div></button>
-  <button class="card pcard" data-act="openInbox"><div class="thumbs"><i>${IC.mail}</i></div><div class="grow"><div class="pname">Messages${unreadN() ? ` (${unreadN()} nouveau${unreadN() > 1 ? 'x' : ''})` : ''}</div><div class="pmeta">Ta boîte de réception</div></div></button>
-  <button class="card pcard" data-act="nav" data-v="tickets"><div class="thumbs"><i>${IC.ticket}</i></div><div class="grow"><div class="pname">Tickets</div><div class="pmeta">Signaler un problème ou proposer une amélioration${open ? `, ${open} ouvert${open > 1 ? 's' : ''}` : ''}</div></div></button>
-  <button class="card pcard" data-act="addUser"><div class="thumbs"><i>${IC.users}</i></div><div class="grow"><div class="pname">Ajouter un utilisateur</div><div class="pmeta">Invite quelqu’un à utiliser Super Cadeau avec vous</div></div></button>
-  <button class="card pcard" data-act="profileForm"><div class="thumbs"><i style="background:${colorOf(me)};color:#fff;font-style:normal;font-weight:800;font-size:18px">${esc(me[0])}</i></div><div class="grow"><div class="pname">Mon profil</div><div class="pmeta">Ma couleur et mon mot de passe</div></div></button>
-  <button class="card pcard" data-act="nav" data-v="sync"><div class="thumbs"><i>${IC.sync}</i></div><div class="grow"><div class="pname">Synchronisation</div><div class="pmeta">${SYNC_LABEL[syncState]}, sauvegardes</div></div></button>`;
+  <h3 class="msec">Mon espace</h3>
+  <div class="mlist">
+    ${row('profileForm', '', av, 'Mon profil', 'Couleur, duo, mot de passe', miss.length ? '<span class="mbadge warn">À régler</span>' : '')}
+    ${row('openInbox', '', IC.mail, 'Messages', 'Ta boîte de réception', un ? `<span class="mbadge">${un}</span>` : '')}
+    ${row('nav', 'data-v="wishes"', IC.gift, 'Listes de souhaits', 'Tes envies et celles des autres')}
+  </div>
+  <h3 class="msec">L’application</h3>
+  <div class="mlist">
+    ${row('addUser', '', IC.users, 'Ajouter un utilisateur', 'Inviter quelqu’un')}
+    ${row('nav', 'data-v="sync"', IC.sync, 'Synchronisation', SYNC_LABEL[syncState])}
+    ${row('nav', 'data-v="tickets"', IC.ticket, 'Tickets', 'Un problème, une idée ?', open ? `<span class="mbadge soft">${open}</span>` : '')}
+  </div>
+  <button class="mlogout" data-act="switch">Se déconnecter</button>`;
 }
 
 /* ---- Tickets ---- */
