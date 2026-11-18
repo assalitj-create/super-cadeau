@@ -1119,7 +1119,8 @@ function voteCard(pid) {
     <p class="sub" style="margin:0 0 12px">Vous avez autant de « j’aime » pour ${esc(listFr(tie.map(g => '« ' + g.t + ' »')))}. Départagez-les par un vote : chacun classe les cadeaux du préféré au moins préféré.</p>
     <button class="btn" data-act="voteStart" data-id="${pid}" data-c="${tie.map(g => g.id).join(',')}">Lancer le vote</button></div>`;
   const ideas = giftsOf(pid).filter(g => g.status === 'idee');
-  return ideas.length >= 2 ? `<div style="margin:14px 0 0"><button class="link" data-act="voteStart" data-id="${pid}" data-c="${ideas.map(g => g.id).join(',')}">Départager les idées par un vote</button></div>` : '';
+  const bt = budgetTotal(pid), tot = giftsOf(pid).reduce((t, g) => t + (g.price != null && g.price !== '' ? +g.price || 0 : 0), 0);
+  return ideas.length >= 2 && bt > 0 && tot > bt ? `<div style="margin:14px 0 0"><button class="link" data-act="voteStart" data-id="${pid}" data-c="${ideas.map(g => g.id).join(',')}">Départager les idées par un vote</button></div>` : '';
 }
 function voteForm() {
   const v = S.votes[voteDraft.vid], p = S.people[v.pid], o = voteDraft.order;
