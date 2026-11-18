@@ -1248,8 +1248,10 @@ function giftForm(g, pid) {
   <div class="row2"><label>Prix (€)<input name="price" type="number" min="0" step="0.01" inputmode="decimal" value="${g.price == null ? '' : g.price}"></label>
   <label>Statut<select name="status">${Object.entries(STATUS).map(([k, l]) => `<option value="${k}" ${(g.status || 'idee') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
   <label>Lien du produit (l’image et le prix se remplissent tout seuls)<span class="inl"><input name="url" type="url" inputmode="url" placeholder="https://…" value="${esc(g.url || '')}"><button type="button" class="btn sec" data-act="preview">Aperçu</button></span></label>
-  <label>Image (adresse remplie automatiquement depuis le lien)<input name="img" type="url" placeholder="https://…/image.jpg" value="${esc(g.img || '')}"></label>
-  <div class="pv" id="pv">${g.img ? `<img src="${esc(g.img)}" alt="" referrerpolicy="no-referrer">` : ''}</div>
+  <input type="hidden" name="img" value="${esc(g.img || '')}">
+  <label>Photo (depuis ton téléphone)<input name="file" type="file" accept="image/*"></label>
+  <label>Ou l’adresse d’une image (remplie automatiquement depuis le lien)<input name="imgurl" type="url" placeholder="https://…/image.jpg" value="${esc(g.img && !/^data:/.test(g.img) ? g.img : '')}"></label>
+  <div class="pv" id="pv">${g.img ? `<img src="${esc(g.img)}" alt="" referrerpolicy="no-referrer">` : ''}</div><button type="button" class="link" data-act="giftNoImg">Retirer l’image</button>
   <label>Note<textarea name="note" rows="2" maxlength="300" placeholder="Taille, couleur, magasin…">${esc(g.note || '')}</textarea></label>
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div></form>`;
 }
@@ -1263,7 +1265,7 @@ async function runPreview(force) {
   const notes = [];
   if (r) {
     if (r.title && !f.elements.t.value) f.elements.t.value = r.title.slice(0, 120);
-    if (r.img && (force || !f.elements.img.value)) f.elements.img.value = r.img;
+    if (r.img && (force || !f.elements.img.value)) { f.elements.img.value = r.img; f.elements.imgurl.value = r.img; }
     if (r.price) {
       const cur = f.elements.price.value;
       if (r.cur && r.cur !== 'EUR') notes.push(`Prix trouvé sur le site : ${r.price} ${r.cur}, non converti. Saisis-le en euros.`);
@@ -1387,6 +1389,7 @@ const actions = {
   async shareInvite(t) { try { await navigator.share({ title: 'Super Cadeau', text: inviteText(t.dataset.name) }); } catch (e) {} },
   addUser() { openModal(userForm()); },
   wishUser(t) { wishUser = t.dataset.v; render(); },
+  giftNoImg() { const f = $('#sheet form[data-form="gift"]'); if (f) { f.elements.img.value = ''; f.elements.imgurl.value = ''; f.elements.file.value = ''; showPv(); } },
   wishNoImg() { const f = $('#sheet form[data-form="wish"]'); if (f) { f.elements.img.value = ''; f.elements.file.value = ''; wishPv(); } },
   claimWish(t) {
     const id = t.dataset.id, w = S.wishes[id], c = S.claims[id]; if (!w || w.owner === me) return;
@@ -1489,6 +1492,13 @@ document.addEventListener('submit', e => {
 });
 document.addEventListener('change', e => {
   const t = e.target;
+  if (t.type === 'file' && t.name === 'file' && t.form && t.form.dataset.form === 'gift') {
+    const f = t.form, file = t.files && t.files[0]; if (!file) return;
+    $('#pv').textContent = 'Préparation de l’image…';
+    shrinkImage(file).then(d => { if (!d) { $('#pv').textContent = 'Image illisible ou trop lourde, essaie-en une autre.'; t.value = ''; return; } f.elements.img.value = d; f.elements.imgurl.value = ''; showPv(); }).catch(() => { $('#pv').textContent = 'Image illisible, essaie-en une autre.'; t.value = ''; });
+    return;
+  }
+  if (t.name === 'imgurl' && t.form && t.form.dataset.form === 'gift') { t.form.elements.img.value = t.value.trim(); showPv(); return; }
   if (t.type === 'file' && t.name === 'file' && t.form && t.form.dataset.form === 'wish') {
     const f = t.form, file = t.files && t.files[0]; if (!file) return;
     $('#wpv').textContent = 'Préparation de l’image…';
