@@ -1428,6 +1428,10 @@ async function runPreview(force) {
       else if (Math.abs(+cur - r.price) > 0.001) notes.push(`Le site indique ${eur(r.price)}. Ton prix (${eur(+cur)}) n’a pas été modifié.`);
     } else if (f.elements.price.value === '') notes.push('Prix non trouvé sur cette page : saisis-le à la main.');
   } else if (f.elements.price.value === '') notes.push('Prix non trouvé : saisis-le à la main.');
+  if (!f.elements.img.value.trim()) {
+    const m = url.match(/\/(?:dp|gp\/product|gp\/aw\/d|product)\/([A-Z0-9]{10})(?:[/?#]|$)/i);
+    if (m && /amazon\.|amzn\./i.test(url)) { const u = `https://m.media-amazon.com/images/P/${m[1].toUpperCase()}.01._SCLZZZZZZZ_.jpg`; f.elements.img.value = u; f.elements.imgurl.value = u; }
+  }
   if (f.elements.img.value.trim()) showPv();
   else pv.textContent = 'Aucune image utilisable trouvée automatiquement (site protégé ?). Colle l’adresse d’une image dans le champ ci-dessus.';
   if (notes.length) pv.insertAdjacentHTML('beforeend', notes.map(n => `<div class="pvnote">${esc(n)}</div>`).join(''));
