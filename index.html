@@ -1003,14 +1003,14 @@ function segBar(pid) {
 function withText(p) {
   if (p.scope === 'private' || p.scope === 'mine') return '';
   const mem = memOf(p), os = mem.filter(u => u !== me); if (!os.length) return '';
-  const names = os.map(u => { const f = foyerOf(u), duo = f && f.members.some(x => x !== u && mem.includes(x)) && !recipInDuo(u, p.id); return esc(u) + (duo ? ' <span class="duotag">(<span class="hrt">♥</span> duo)</span>' : ''); });
+  const names = os.map(u => { const f = foyerOf(u), pt = f ? f.members.filter(x => x !== u && mem.includes(x)) : [], duo = pt.length && !recipInDuo(u, p.id); return esc(u) + (duo ? ' <span class="duotag">(en duo avec ' + esc(listFr(pt)) + ')</span>' : ''); });
   return 'avec ' + (names.length > 1 ? names.slice(0, -1).join(', ') + ' et ' + names[names.length - 1] : names[0]);
 }
 function shareAvs(p) {
   if (p.scope === 'private') return `<span class="lk">${IC.lock}Cet appareil</span>`;
   if (p.scope === 'mine') return `<span class="lk">${IC.devices}Mes appareils</span>`;
   const os = memOf(p).filter(u => u !== me);
-  const mem = memOf(p), names = os.map(u => { const f = foyerOf(u), duo = f && f.members.some(x => x !== u && mem.includes(x)) && !recipInDuo(u, p.id); return esc(u) + (duo ? ' <span class="duotag">(<span class="hrt">♥</span> duo)</span>' : ''); });
+  const mem = memOf(p), names = os.map(u => { const f = foyerOf(u), pt = f ? f.members.filter(x => x !== u && mem.includes(x)) : [], duo = pt.length && !recipInDuo(u, p.id); return esc(u) + (duo ? ' <span class="duotag">(en duo avec ' + esc(listFr(pt)) + ')</span>' : ''); });
   const txt = names.length > 1 ? names.slice(0, -1).join(', ') + ' et ' + names[names.length - 1] : names[0];
   return os.length ? `<span class="avs" role="img" aria-label="Avec ${esc(listFr(os))}">${os.map(av).join('')}</span><span class="tx">avec ${txt}</span>` : `<span class="lk">${IC.lock}Toi seul</span>`;
 }
