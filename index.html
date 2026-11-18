@@ -350,11 +350,16 @@ header.gate .dot{position:absolute;border-radius:50%}
 @keyframes spup{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){#splash *{animation-duration:.01s!important;animation-delay:0s!important}}
 .prow{display:flex;flex-wrap:nowrap;gap:5px}.prow .btn{flex:0 1 auto;min-width:0;padding:0 5px;font-size:min(11px,2.8vw);letter-spacing:-.03em;white-space:nowrap;line-height:1;height:40px}
-.duotag{font-weight:700;white-space:nowrap}.hrt{color:#D8392B}
+.duotag{font-weight:700;white-space:nowrap}.hrt{color:#fff}
 .hl{background:#F4C542;color:#14243B;padding:1px 8px;border-radius:8px;font-weight:800}
 .setup{background:#fff;border:2px solid var(--gold);border-radius:16px;padding:12px 14px;margin:0 0 12px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .setup span{font-size:13px;color:#4a5a73}
 nav button{position:relative}
+.bell{position:relative;width:34px;height:34px;border-radius:50%;border:0;background:#B72B20;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.bell svg{width:19px;height:19px}
+.bdot{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#F4C542;color:#4a3500;font:800 10px/17px sans-serif;text-align:center}
+.nfeed .nitem{padding:10px 0;border-bottom:1px solid #e4ecf6}
+.nfeed .nitem.new{border-left:4px solid #F4C542;padding-left:10px}
 .cdot{margin-left:6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#F4C542;color:#4a3500;font:800 10px/16px sans-serif;text-align:center}
 .ndot{position:absolute;top:4px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--red);color:#fff;font:700 10px/16px sans-serif;text-align:center;font-style:normal}
 .msec{font-size:14px;font-weight:800;color:var(--ink-m);margin:18px 4px 8px;letter-spacing:0}
@@ -452,6 +457,7 @@ const IC = {
   users: svg('<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14.5c2.5 0 4 1.5 4 4"/>'),
   more: svg('<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>'),
   me: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7"/>'),
+  bell: svg('<path d="M6 17V11a6 6 0 0112 0v6l1.5 2h-15z"/><path d="M10 21a2 2 0 004 0"/>'),
   mail: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
   fire: svg('<path d="M2.5 5.5h19M5 5.5V21M19 5.5V21M3 21h18"/><path d="M12 18.5c-2 0-3.2-1.2-3.2-2.7 0-1.7 1.6-2.4 1.9-4.2 1.4.9 4.5 2.7 4.5 5.4 0 .9-1.1 1.5-3.2 1.5z"/>'),
   lock: svg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>'),
@@ -522,7 +528,7 @@ const isOut = (pid, u) => { const o = S.outs && S.outs[pid + '|' + u]; return !!
 const membersOf = pid => S.people[pid] ? memOf(S.people[pid]).filter(u => !isOut(pid, u)) : USERS;
 const prefOf = u => (S.prefs && S.prefs[u] && !S.prefs[u].d) ? S.prefs[u] : {};
 const inboxOf = () => live('msgs').filter(m => m.to === me).sort((a, b) => (b.c || 0) - (a.c || 0));
-const unreadN = () => inboxOf().filter(m => !m.read || (m.kind === 'invite' && m.state === 'pending')).length;
+const unreadN = () => inboxOf().filter(m => !m.read).length;
 function sendMsg(to, text, extra) { put('msgs', uid(), Object.assign({ from: me, to, t: text, c: Date.now(), read: false }, extra || {})); }
 function missingSettings() {
   const m = []; if (!(userColor(me) || prefOf(me).colorDone)) m.push('ta couleur'); if (!(foyerOf(me) || prefOf(me).duoDone)) m.push('ton duo');
@@ -545,7 +551,22 @@ function outForm(pid) {
   <label>Pourquoi ?<textarea name="why" rows="3" required maxlength="300" placeholder="Ex. C’est ma compagne, je m’en occupe de mon côté"></textarea></label>
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Me dissocier</button></div></form>`;
 }
+const whenFr = c => c ? new Date(c).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+function notifyMembers(pid, text) { if (!S.people[pid] || isSolo(pid)) return; membersOf(pid).filter(u => u !== me).forEach(u => sendMsg(u, text, { kind: 'notif', pid })); }
+function notifyGift(g, st, isNew) {
+  const pn = S.people[g.pid] ? S.people[g.pid].name : '';
+  if (isNew) { notifyMembers(g.pid, `${me} a proposé « ${g.t} » pour ${pn}.`); return; }
+  if (st === 'achete') notifyMembers(g.pid, `${me} a acheté « ${g.t} » pour ${pn}${giftCost(g) ? ' (' + eur(giftCost(g)) + ')' : ''}.`);
+  else notifyMembers(g.pid, `${me} a passé « ${g.t} » pour ${pn} en « ${STATUS[st]} ».`);
+}
 let inboxFresh = new Set();
+function openNotifsAgain() { setTimeout(() => openModal(notifFeed()), 50); }
+function notifFeed() {
+  const list = inboxOf().slice(0, 40);
+  return `<div class="nfeed"><h2>Notifications</h2>
+  ${list.length ? list.map(m => `<div class="nitem ${inboxFresh.has(m.id) || (m.kind === 'invite' && m.state === 'pending') ? 'new' : ''}" data-act="notifGo" data-id="${m.id}" style="cursor:pointer"><div class="sub"><b>${m.kind === 'msg' || !m.kind ? esc(m.from) : (m.kind === 'notif' || m.kind === 'info' || m.kind === 'out' || m.kind === 'duo' ? 'Info' : esc(m.from))}</b>, ${whenFr(m.c)}</div><div class="tkdesc">${esc(m.t)}</div>${inviteUi(m)}</div>`).join('') : '<p class="note">Rien de nouveau pour l’instant.</p>'}
+  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Fermer</button><button type="button" class="btn sec" data-act="openInbox">Écrire un message</button></div></div>`;
+}
 function inviteUi(m) {
   if (m.kind !== 'invite') return '';
   if (m.state === 'accepted') return '<div class="sub" style="margin-top:6px"><span class="badge ok">Tu participes</span></div>';
@@ -882,7 +903,7 @@ function render() {
   const hero = view === 'person'
       ? `<div class="hero"><div class="hrow"><button class="rb" data-act="nav" data-v="home" aria-label="Retour">${IC.back}</button><span><button class="rb" data-act="editPerson" data-id="${cur}" aria-label="Modifier">${IC.edit}</button><button class="rb" data-act="delPerson" data-id="${cur}" aria-label="Supprimer">${IC.trash}</button></span></div><div class="hname">${esc(S.people[cur].name)}</div><div class="hshare">${shareAvs(S.people[cur])}</div></div>`
       : '';
-  hdr.innerHTML = `<div class="top"><h1>${LOGO_W}Super Cadeau</h1><div class="row" style="gap:12px;flex-wrap:nowrap"><button class="chip-user" data-act="nav" data-v="more" aria-label="Mon espace"><i>${IC.me}</i>Mon espace${unreadN() ? `<b class="cdot">${unreadN()}</b>` : ''}</button></div></div>` + hero;
+  hdr.innerHTML = `<div class="top"><h1>${LOGO_W}Super Cadeau</h1><div class="row" style="gap:8px;flex-wrap:nowrap"><button class="bell" data-act="openNotifs" aria-label="Notifications${unreadN() ? ', ' + unreadN() + ' à lire' : ''}">${IC.bell}${unreadN() ? `<b class="bdot">${unreadN()}</b>` : ''}</button><button class="chip-user" data-act="nav" data-v="more" aria-label="Mon espace"><i>${IC.me}</i>Mon espace</button></div></div>` + hero;
   const items = [['home', IC.gift, 'Qui'], ['ideas', IC.idea, 'Quoi'], ['track', IC.track, 'Quand'], ['budgets', IC.euro, 'Combien'], ['pay', IC.pay, 'Comment']];
   nav.innerHTML = items.map(([k, i, l]) => `<button data-act="nav" data-v="${k}" class="${(view === k || (view === 'person' && k === 'home') || (k === 'more' && (view === 'tickets' || view === 'sync' || view === 'wishes' || view === 'inbox'))) ? 'on' : ''}">${i}${l}${k === 'more' && unreadN() ? `<i class="ndot">${unreadN()}</i>` : ''}</button>`).join('');
   app.innerHTML = ({ home: homeView, person: personView, ideas: ideasView, track: trackView, budgets: budgetsView, pay: payView, more: moreView, inbox: inboxView, wishes: wishesView, tickets: ticketsView, sync: syncView }[view] || homeView)();
@@ -1031,6 +1052,7 @@ function setStatus(id, st, extra) {
   const upd = Object.assign({ status: st, log }, extra || {});
   if (sidx(st) >= 2) { upd.buyer = upd.buyer || g.buyer || me; upd.bdate = upd.bdate || g.bdate || today(); }
   put('gifts', id, upd);
+  if (g.status !== st) notifyGift(Object.assign({ id }, g, upd), st, false);
 }
 
 /* ---- Vote d'arbitrage : classement du préféré au moins préféré (méthode Borda) ---- */
@@ -1517,7 +1539,7 @@ const actions = {
     put('people', m.pid, { members: memOf(p).includes(me) ? memOf(p) : memOf(p).concat(me), invited: (p.invited || []).filter(x => x !== me) });
     put('msgs', id, { state: 'accepted', read: true });
     sendMsg(m.from, `${me} participe au cadeau pour ${p.name}.`, { kind: 'info' });
-    render(); openModal(budgetPrompt(m.pid));
+    closeModal(); render(); openModal(budgetPrompt(m.pid));
   },
   invDecline(t) {
     const id = t.dataset.id, m = S.msgs[id]; if (!m || m.to !== me || m.state !== 'pending') return;
@@ -1525,7 +1547,16 @@ const actions = {
     if (p) put('people', m.pid, { invited: (p.invited || []).filter(x => x !== me) });
     put('msgs', id, { state: 'declined', read: true });
     sendMsg(m.from, `${me} ne participe pas au cadeau pour ${p ? p.name : 'cette personne'}.`, { kind: 'info' });
-    render(); toast('Refus envoyé');
+    closeModal(); render(); toast('Refus envoyé');
+  },
+  openNotifs() { if ($('#sheet .nfeed')) { closeModal(); return; } inboxFresh = new Set(inboxOf().filter(m => !m.read).map(m => m.id)); inboxOf().forEach(m => { if (!m.read) put('msgs', m.id, { read: true }); }); render(); openModal(notifFeed()); },
+  notifGo(t) {
+    const m = S.msgs[t.dataset.id]; if (!m) return; const p = m.pid && S.people[m.pid];
+    closeModal();
+    if (m.kind === 'duo') { openModal(duoForm()); return; }
+    if (p && !p.d && personOk(m.pid)) { view = 'person'; cur = m.pid; render(); window.scrollTo(0, 0); return; }
+    if (m.kind === 'invite') { toast('Réponds avec « Oui » ou « Non merci »'); openNotifsAgain(); return; }
+    inboxFresh = new Set(); view = 'inbox'; render(); window.scrollTo(0, 0);
   },
   openInbox() { inboxFresh = new Set(inboxOf().filter(m => !m.read).map(m => m.id)); inboxOf().forEach(m => { if (!m.read) put('msgs', m.id, { read: true }); }); view = 'inbox'; closeModal(); render(); },
   outForm(t) { openModal(outForm(t.dataset.id)); },
@@ -1642,6 +1673,7 @@ document.addEventListener('submit', e => {
     const rec = { pid: E.pid.value, t: E.t.value.trim(), price: p === '' ? null : parseFloat(p), status: st, log, url: E.url.value.trim(), img: E.img.value.trim(), note: E.note.value.trim(), by: old.by || me, c: old.c || Date.now(), perHead: !!(E.perHead && E.perHead.checked) };
     if (sidx(st) >= 2) { rec.buyer = old.buyer || me; rec.bdate = old.bdate || today(); }
     put('gifts', id, rec);
+    if (isNew) notifyGift(Object.assign({ id }, rec), st, true); else if (old.status !== st) notifyGift(Object.assign({ id }, old, rec), st, false);
     closeModal(); render(); toast(isNew ? 'Idée ajoutée' : 'Cadeau modifié');
   }
 });
@@ -1662,8 +1694,8 @@ document.addEventListener('change', e => {
   }
   if (t.dataset.bud) { const v = t.value.trim(); put('budgets', t.dataset.bud + '|' + me, { a: v === '' ? null : Math.max(0, parseFloat(v) || 0) }); render(); }
   else if (t.dataset.share) { const v = t.value.trim(); put('shares', t.dataset.share, { a: v === '' ? 0 : Math.max(0, parseFloat(v) || 0) }); render(); }
-  else if (t.dataset.paid) { put('shares', t.dataset.paid, { paid: t.checked }); render(); }
-  else if (t.dataset.buyer) { put('gifts', t.dataset.buyer, { buyer: t.value }); render(); }
+  else if (t.dataset.paid) { put('shares', t.dataset.paid, { paid: t.checked }); const g0 = S.gifts[t.dataset.paid.split('|')[0]]; if (t.checked && g0 && g0.buyer && g0.buyer !== me) sendMsg(g0.buyer, `${me} a payé sa part de « ${g0.t} ».`, { kind: 'notif', pid: g0.pid }); render(); }
+  else if (t.dataset.buyer) { put('gifts', t.dataset.buyer, { buyer: t.value }); const g1 = S.gifts[t.dataset.buyer]; if (t.value && g1) notifyMembers(g1.pid, `${t.value} avance l’achat de « ${g1.t} ».`); render(); }
   else if (t.dataset.filter) { if (t.dataset.filter === 'p') fPerson = t.value; else fStatus = t.value; render(); }
   else if (t.id === 'file') { const fl = t.files[0]; if (fl) fl.text().then(doImport); t.value = ''; }
   else if (t.name === 'status' && t.closest('form[data-form="track"]')) { const f = t.form; if (sidx(t.value) >= 2) { if (!f.elements.bdate.value) f.elements.bdate.value = today(); if (!f.elements.buyer.value) f.elements.buyer.value = me; } }
