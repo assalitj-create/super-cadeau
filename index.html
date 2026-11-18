@@ -578,6 +578,7 @@ function notifFeed() {
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Fermer</button><button type="button" class="btn sec" data-act="openInbox">Écrire un message</button></div></div>`;
 }
 function inviteUi(m) {
+  if (m.kind === 'ref') return refUi(m);
   if (m.kind !== 'invite') return '';
   if (m.state === 'accepted') return '<div class="sub" style="margin-top:6px"><span class="badge ok">Tu participes</span></div>';
   if (m.state === 'declined') return '<div class="sub" style="margin-top:6px"><span class="badge bad">Refusé</span></div>';
@@ -1082,11 +1083,15 @@ function setStatus(id, st, extra) {
 /* ---- Vote d'arbitrage : classement du préféré au moins préféré (méthode Borda) ---- */
 let voteDraft = null;
 const voteGet = id => S.votes[id] ? Object.assign({ id }, S.votes[id]) : null;
-const openVoteOf = pid => live('votes').filter(v => v.pid === pid && v.status === 'open').sort((a, b) => (b.c || 0) - (a.c || 0))[0] || null;
+const refAns = (v, u) => { const b = S.ballots[v.id + '|ref|' + u]; return b && !b.d && typeof b.ok === 'boolean' ? b.ok : undefined; };
+function refState(v) { const m = membersOf(v.pid); if (m.some(u => refAns(v, u) === false)) return 'no'; return m.every(u => refAns(v, u) === true) ? 'ok' : 'wait'; }
+const voteLive = v => v.status === 'open' || (v.status === 'ask' && refState(v) === 'ok');
+const askOf = pid => live('votes').filter(v => v.pid === pid && v.status === 'ask' && refState(v) !== 'ok').sort((a, b) => (b.c || 0) - (a.c || 0))[0] || null;
+const openVoteOf = pid => live('votes').filter(v => v.pid === pid && voteLive(v)).sort((a, b) => (b.c || 0) - (a.c || 0))[0] || null;
 const voteCands = v => (v.cands || []).filter(id => S.gifts[id] && !S.gifts[id].d);
 const ballotOf = (vid, u) => { const b = S.ballots[vid + '|' + u]; return b && !b.d && Array.isArray(b.r) ? b : null; };
 function tieIdeas(pid) {
-  const mem = membersOf(pid); if (isSolo(pid) || mem.length < 3) return null;
+  const mem = membersOf(pid); if (isSolo(pid) || mem.length < 2) return null;
   const ideas = giftsOf(pid).filter(g => g.status === 'idee'); if (ideas.length < 2) return null;
   const cnt = g => mem.filter(u => likedBy(g.id, u)).length, top = Math.max(...ideas.map(cnt)); if (top < 1) return null;
   const tied = ideas.filter(g => cnt(g) === top); return tied.length >= 2 ? tied : null;
@@ -1105,8 +1110,34 @@ const arrow = d => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" 
 function voteWho(v) {
   return `<div class="vwho">${membersOf(v.pid).map(u => `<span class="vv ${ballotOf(v.id, u) ? 'ok' : ''}" title="${esc(u)} ${ballotOf(v.id, u) ? 'a voté' : 'n’a pas encore voté'}">${av(u)}</span>`).join('')}</div>`;
 }
+function refAnswer(vid, ok) {
+  const v = voteGet(vid); if (!v || v.d) return;
+  put('ballots', vid + '|ref|' + me, { vid, user: me, ok });
+  const nv = voteGet(vid), p = S.people[v.pid], st = refState(nv);
+  inboxOf().filter(m => m.kind === 'ref' && m.vid === vid && !m.read).forEach(m => put('msgs', m.id, { read: true }));
+  if (v.by !== me) sendMsg(v.by, ok ? `${me} accepte le référendum pour ${p ? p.name : ''}.` : `${me} refuse le référendum pour ${p ? p.name : ''}.`, { kind: 'notif', pid: v.pid });
+  if (st === 'ok') notifyMembers(v.pid, 'Tout le monde est d’accord : le référendum est lancé, à vous de voter !');
+  closeModal(); render(); toast(ok ? 'Accord enregistré' : 'Refus enregistré');
+}
+function refUi(m) {
+  const v = voteGet(m.vid); if (!v || v.d) return '<div class="sub" style="margin-top:6px"><span class="badge">Demande terminée</span></div>';
+  const a = refAns(v, me);
+  if (a === true) return '<div class="sub" style="margin-top:6px"><span class="badge ok">Tu as accepté</span></div>';
+  if (a === false) return '<div class="sub" style="margin-top:6px"><span class="badge bad">Tu as refusé</span></div>';
+  if (refState(v) === 'no') return '<div class="sub" style="margin-top:6px"><span class="badge bad">Refusé par un participant</span></div>';
+  return `<div class="actions" style="margin-top:10px;justify-content:flex-start"><button class="btn" data-act="refYes" data-id="${m.vid}">Oui, faisons un référendum</button><button class="btn ghost" data-act="refNo" data-id="${m.vid}">Non merci</button></div>`;
+}
 function voteCard(pid) {
-  const mem = membersOf(pid); if (isSolo(pid) || mem.length < 3) return '';
+  const mem = membersOf(pid); if (isSolo(pid) || mem.length < 2) return '';
+  const ask = askOf(pid);
+  if (ask) {
+    const st = refState(ask), who = membersOf(pid), mine = refAns(ask, me);
+    if (st === 'no') { const no = who.find(u => refAns(ask, u) === false); return `<div class="card vote"><div class="vhead"><b class="big" style="font-size:19px">Pas de référendum</b></div><p class="sub" style="margin:0 0 12px">${esc(no)} n’en veut pas. Il faut l’accord de tous : le référendum n’a pas lieu.</p><button class="btn ghost" data-act="refClose" data-id="${ask.id}">OK</button></div>`; }
+    const wait = who.filter(u => refAns(ask, u) !== true);
+    return `<div class="card vote"><div class="vhead"><b class="big" style="font-size:19px">Référendum proposé</b><span class="badge">${who.length - wait.length} sur ${who.length}</span></div>
+      <p class="sub" style="margin:4px 0 12px">${esc(ask.by)} propose de départager les idées par un référendum. Il faut l’accord de tous. En attente de ${esc(listFr(wait))}.</p>
+      ${mine === undefined ? `<div class="row"><button class="btn" data-act="refYes" data-id="${ask.id}">Oui, faisons un référendum</button><button class="btn ghost" data-act="refNo" data-id="${ask.id}">Non merci</button></div>` : `<div class="row"><span class="badge ok">Tu as accepté</span>${ask.by === me ? `<button class="link" data-act="refClose" data-id="${ask.id}">Annuler la demande</button>` : ''}</div>`}</div>`;
+  }
   const v = openVoteOf(pid);
   if (v) {
     const done = mem.filter(u => ballotOf(v.id, u)).length, mine = ballotOf(v.id, me);
@@ -1117,10 +1148,10 @@ function voteCard(pid) {
   const tie = tieIdeas(pid);
   if (tie) return `<div class="card vote"><div class="vhead"><b class="big" style="font-size:19px">Égalité entre ${tie.length} idées</b></div>
     <p class="sub" style="margin:0 0 12px">Vous avez autant de « j’aime » pour ${esc(listFr(tie.map(g => '« ' + g.t + ' »')))}. Départagez-les par un vote : chacun classe les cadeaux du préféré au moins préféré.</p>
-    <button class="btn" data-act="voteStart" data-id="${pid}" data-c="${tie.map(g => g.id).join(',')}">Lancer le vote</button></div>`;
+    <button class="btn" data-act="voteStart" data-id="${pid}" data-c="${tie.map(g => g.id).join(',')}">Proposer le référendum</button></div>`;
   const ideas = giftsOf(pid).filter(g => g.status === 'idee');
   const bt = budgetTotal(pid), tot = giftsOf(pid).reduce((t, g) => t + (g.price != null && g.price !== '' ? +g.price || 0 : 0), 0);
-  return ideas.length >= 2 && bt > 0 && tot > bt ? `<div style="margin:14px 0 0"><button class="link" data-act="voteStart" data-id="${pid}" data-c="${ideas.map(g => g.id).join(',')}">Départager les idées par un vote</button></div>` : '';
+  return ideas.length >= 2 && bt > 0 && tot > bt ? `<div style="margin:14px 0 0"><button class="link" data-act="voteStart" data-id="${pid}" data-c="${ideas.map(g => g.id).join(',')}">Proposer un référendum pour départager</button></div>` : '';
 }
 function voteForm() {
   const v = S.votes[voteDraft.vid], p = S.people[v.pid], o = voteDraft.order;
@@ -1542,10 +1573,16 @@ const actions = {
   voteStart(t) {
     const pid = t.dataset.id, c = (t.dataset.c || '').split(',').filter(Boolean); if (c.length < 2) return;
     if (openVoteOf(pid)) { toast('Un vote est déjà en cours'); return; }
-    const id = uid(); put('votes', id, { pid, cands: c, by: me, c: Date.now(), status: 'open' });
-    voteDraft = { vid: id, order: fullRank(S.votes[id], []) }; render(); openModal(voteForm());
+    if (askOf(pid)) { toast('Une demande de référendum est déjà en cours'); return; }
+    const id = uid(), p = S.people[pid];
+    put('votes', id, { pid, cands: c, by: me, c: Date.now(), status: 'ask' }); put('ballots', id + '|ref|' + me, { vid: id, user: me, ok: true });
+    membersOf(pid).filter(u => u !== me).forEach(u => sendMsg(u, `${me} propose un référendum pour départager les idées pour ${p ? p.name : ''}. Il faut l’accord de tous.`, { kind: 'ref', vid: id, pid }));
+    render(); toast('Demande envoyée aux autres');
   },
-  voteOpen(t) { const v = voteGet(t.dataset.id); if (!v || v.status !== 'open') return; const b = ballotOf(v.id, me); voteDraft = { vid: v.id, order: fullRank(v, b ? b.r : []) }; openModal(voteForm()); },
+  refYes(t) { refAnswer(t.dataset.id, true); },
+  refNo(t) { refAnswer(t.dataset.id, false); },
+  refClose(t) { del('votes', t.dataset.id); render(); },
+  voteOpen(t) { const v = voteGet(t.dataset.id); if (!v || !voteLive(v)) return; const b = ballotOf(v.id, me); voteDraft = { vid: v.id, order: fullRank(v, b ? b.r : []) }; openModal(voteForm()); },
   vmove(t) { const i = +t.dataset.i, d = +t.dataset.d, o = voteDraft.order, j = i + d; if (j < 0 || j >= o.length) return; [o[i], o[j]] = [o[j], o[i]]; const sh = $('#sheet'), top = sh.scrollTop; openModal(voteForm()); $('#sheet').scrollTop = top; },
   vsubmit() {
     const v = voteGet(voteDraft.vid); put('ballots', v.id + '|' + me, { vid: v.id, user: me, r: voteDraft.order.slice() });
