@@ -1152,9 +1152,9 @@ function tieIdeas(pid) {
   if (!overBudget(pid)) return null; /* pas de départage tant que le budget n'est pas dépassé */
   const mem = membersOf(pid); if (isSolo(pid) || mem.length < 2) return null;
   const ideas = giftsOf(pid).filter(g => g.status === 'idee'); if (ideas.length < 2) return null;
-  const cnt = g => mem.filter(u => likedBy(g.id, u)).length, top = Math.max(...ideas.map(cnt)); if (top < 1) return null;
-  if (mem.filter(u => ideas.some(g => likedBy(g.id, u))).length < 2) return null; /* un seul votant : pas d'égalité à départager */
-  const tied = ideas.filter(g => cnt(g) === top); return tied.length >= 2 ? tied : null;
+  const c = ideas.map(g => mem.filter(u => likedBy(g.id, u)).length);
+  if (Math.min(...c) < 2) return null; /* chaque idée doit avoir au moins 2 cœurs */
+  const top = Math.max(...c), tied = ideas.filter((g, i) => c[i] === top); return tied.length >= 2 ? tied : null;
 }
 function fullRank(v, r) { const c = voteCands(v), o = (r || []).filter(id => c.includes(id)); c.forEach(id => { if (!o.includes(id)) o.push(id); }); return o; }
 function voteScore(v) {
@@ -1206,12 +1206,12 @@ function voteCard(pid) {
       <div class="row"><button class="btn" data-act="voteOpen" data-id="${v.id}">${mine ? 'Modifier mon vote' : 'Voter'}</button><button class="btn sec" data-act="voteRes" data-id="${v.id}">Voir les résultats</button></div></div>`;
   }
   const tie = tieIdeas(pid);
-  if (tie) return `<div class="card vote"><div class="vhead"><b class="big" style="font-size:19px">Égalité entre ${tie.length} idées</b></div>
-    <p class="sub" style="margin:0 0 12px">Vous avez autant de « j’aime » pour ${esc(listFr(tie.map(g => '« ' + g.t + ' »')))}. Départagez-les par un vote : chacun classe les cadeaux du préféré au moins préféré.</p>
+  if (tie) return `<div class="card vote"><div class="vhead"><b class="big" style="font-size:19px">Aucune idée ne sort du lot</b></div>
+    <p class="sub" style="margin:0 0 12px">Le budget est dépassé et vos ♥ sont à égalité : ${esc(listFr(tie.map(g => '« ' + g.t + ' »')))}. Départagez-les par un référendum : chacun classe les cadeaux du préféré au moins préféré.</p>
     <button class="btn" data-act="voteStart" data-id="${pid}" data-c="${tie.map(g => g.id).join(',')}">Proposer le référendum</button></div>`;
   const ideas = giftsOf(pid).filter(g => g.status === 'idee');
-  const bt = budgetTotal(pid), tot = giftsOf(pid).reduce((t, g) => t + (g.price != null && g.price !== '' ? +g.price || 0 : 0), 0);
-  return ideas.length >= 2 && bt > 0 && tot > bt ? `<div style="margin:14px 0 0"><button class="link" data-act="voteStart" data-id="${pid}" data-c="${ideas.map(g => g.id).join(',')}">Proposer un référendum pour départager</button></div>` : '';
+  return ideas.length >= 2 && overBudget(pid) ? `<div class="card vote"><div class="vhead"><b class="big" style="font-size:19px">Budget dépassé</b></div>
+    <p class="sub" style="margin:0">Le total des cadeaux dépasse le budget fixé. Fiez-vous aux ♥ pour faire votre sélection : les plus aimés sont les meilleurs candidats.</p></div>` : '';
 }
 function voteForm() {
   const v = S.votes[voteDraft.vid], p = S.people[v.pid], o = voteDraft.order;
