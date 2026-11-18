@@ -508,6 +508,16 @@ header.gate .dot{display:none}
 .table td:first-child .sub{font-size:12px;line-height:1.3;white-space:normal;overflow-wrap:anywhere}
 .table td:first-child .duotag{white-space:normal;display:block}
 .table td:first-child{width:40%;overflow-wrap:anywhere}
+
+.gedit{margin-bottom:12px}
+.swr{display:flex;gap:10px;margin:8px 0 4px;flex-wrap:wrap}
+.sw{position:relative;cursor:pointer;display:block;width:34px;height:34px}
+.sw input{position:absolute;opacity:0;inset:0;width:100%;height:100%;min-height:0;margin:0;padding:0;border:0;cursor:pointer}
+.sw i{margin:2px}
+.sw i{display:block;width:30px;height:30px;border-radius:50%;box-sizing:border-box;border:3px solid #fff;box-shadow:0 0 0 1.5px var(--line)}
+.sw input:checked+i{box-shadow:0 0 0 2px var(--ink)}
+.sw input:focus-visible+i{outline:2px solid var(--ink);outline-offset:3px}
+label.sw{border:0;background:none;border-radius:50%;margin:0;padding:0;box-shadow:none}
 </style>
 </head>
 <body>
@@ -577,8 +587,10 @@ function setUserColor(name, color) {
 }
 const av = n => `<span class="av" style="background:${colorOf(n)}">${esc((n || '?')[0].toUpperCase())}</span>`;
 const BOXES = [['#D8392B', '#B72B20', '#F4C542'], ['#1E6B4A', '#16553A', '#D8392B'], ['#F4C542', '#D9A41C', '#1E6B4A'], ['#2B59C3', '#1F4496', '#F4C542'], ['#E8738A', '#C9566C', '#FFF1D6']];
-function boxSvg(name) {
-  const h = Array.from(String(name || '')).reduce((a, c) => a + c.charCodeAt(0), 0), b = BOXES[h % BOXES.length];
+const GCOL = [['rouge', '#D8392B', '#B72B20', '#F4C542', '#FBE0DC', '#B72B20'], ['vert', '#1E6B4A', '#16553A', '#D8392B', '#E3F2E9', '#1E6B46'], ['or', '#F4C542', '#D9A41C', '#1E6B4A', '#FFF1D6', '#8A5600'], ['bleu', '#2B59C3', '#1F4496', '#F4C542', '#DCE6F8', '#2B59C3'], ['rose', '#E8738A', '#C9566C', '#FFFFFF', '#FCE4EA', '#B03A58'], ['violet', '#7B4FB5', '#5E3A92', '#F4C542', '#EADDF7', '#6B3FA0']];
+const gcol = gid => { const g = gid && S.groups && S.groups[gid]; if (!g) return null; const k = g.color && GCOL.find(c => c[0] === g.color); return k || GCOL[Array.from(String(gid)).reduce((a, c) => a + c.charCodeAt(0), 0) % GCOL.length]; };
+function boxSvg(name, gid) {
+  const h = Array.from(String(name || '')).reduce((a, c) => a + c.charCodeAt(0), 0), gc = gcol(gid), b = gc ? [gc[1], gc[2], gc[3]] : BOXES[h % BOXES.length];
   return `<svg class="pbox" viewBox="0 0 46 46" aria-hidden="true"><rect x="7" y="18" width="32" height="22" rx="2" fill="${b[0]}"/><rect x="5" y="13" width="36" height="8" rx="2" fill="${b[1]}"/><rect x="21" y="13" width="4" height="27" fill="${b[2]}"/><path d="M23 13C17 3 9 8 15 13zM23 13C29 3 37 8 31 13z" fill="none" stroke="${b[2]}" stroke-width="3"/></svg>`;
 }
 const TREE = `<svg class="tree" viewBox="0 0 150 120" aria-hidden="true"><polygon points="75,14 104,52 46,52" fill="#1E6B4A"/><polygon points="75,34 114,80 36,80" fill="#2A7F58"/><polygon points="75,58 124,108 26,108" fill="#1E6B4A"/><rect x="68" y="106" width="14" height="14" fill="#7A4A2A"/><polygon points="75,2 78,10 87,10 80,15 83,24 75,18 67,24 70,15 63,10 72,10" fill="#F4C542"/><circle cx="62" cy="70" r="4" fill="#F4C542"/><circle cx="88" cy="92" r="4" fill="#fff"/><circle cx="58" cy="96" r="4" fill="#F4C542"/><rect x="104" y="96" width="30" height="24" fill="#F4C542"/><rect x="116" y="96" width="6" height="24" fill="#D8392B"/></svg>`;
@@ -1061,7 +1073,7 @@ function votePill(pid) {
 }
 function personCard(p) {
   const ch = chosenTotal(p.id), bt = budgetTotal(p.id), n = giftsOf(p.id), pc = chosenOf(p.id).length;
-  return `<button class="card pcard" data-act="open" data-id="${p.id}">${boxSvg(p.name)}
+  return `<button class="card pcard" data-act="open" data-id="${p.id}">${boxSvg(p.name, groupOf(p.id))}
       <div class="grow" style="min-width:0"><div class="pname">${esc(p.name)}</div>
       <div class="pwho">${shareAvs(p)}</div>
       <div class="pwho"><span>${n.length} idée${n.length > 1 ? 's' : ''}, dont ${pc} retenue${pc > 1 ? 's' : ''}</span>${votePill(p.id)}</div>
@@ -1085,7 +1097,7 @@ function homeView() {
   let rail = '';
   if (people.length && groups.length) {
     rail += bub('gfilter', 'all', IC.gift, 'Tous', 'background:#0F3B2E;color:#F4C542', fGroup === 'all', people.length);
-    groups.forEach((g, i) => { const c = PAL[i % PAL.length]; rail += bub('gfilter', g.id, users, g.name, `background:${c[0]};color:${c[1]}`, fGroup === g.id, nIn(p => groupOf(p.id) === g.id)); });
+    groups.forEach(g => { const c = gcol(g.id); rail += bub('gfilter', g.id, users, g.name, `background:${c[4]};color:${c[5]}`, fGroup === g.id, nIn(p => groupOf(p.id) === g.id)); });
     if (people.some(p => !groupOf(p.id))) rail += bub('gfilter', 'none', ask, 'Sans groupe', 'background:#E6ECF4;color:#4A5B73', fGroup === 'none', nIn(p => !groupOf(p.id)));
   }
   if (people.length) rail += bub('groupsForm', null, groups.length ? pen : plus, groups.length ? 'Gérer' : 'Créer des groupes', 'background:#fff;border:2px dashed #9AA9BD;color:#4A5B73', false).replace('class="bub ', 'class="bub manage ');
@@ -1102,8 +1114,8 @@ function groupsForm() {
   const gs = myGroups();
   return `<form data-form="groups"><h2>Mes groupes</h2>
   <p class="sub" style="margin-top:-8px">Ils te servent à trier tes personnes (Famille, Amis, Collègues…). Chacun a les siens : les autres ne les voient pas.</p>
-  ${gs.map(g => `<div class="inl" style="margin-bottom:8px"><input name="g_${g.id}" value="${esc(g.name)}" maxlength="40" aria-label="Nom du groupe"><button type="button" class="btn danger sm" data-act="delGroup" data-id="${g.id}" style="height:44px">Supprimer</button></div>`).join('')}
-  <label>Nouveau groupe<input name="newgroup" maxlength="40" placeholder="Ex. Famille"></label>
+  ${gs.map(g => `<div class="gedit"><div class="inl"><input name="g_${g.id}" value="${esc(g.name)}" maxlength="40" aria-label="Nom du groupe"><button type="button" class="btn danger sm" data-act="delGroup" data-id="${g.id}" style="height:44px">Supprimer</button></div><div class="swr" role="radiogroup" aria-label="Couleur">${GCOL.map(c => `<label class="sw" title="${c[0]}"><input type="radio" name="c_${g.id}" value="${c[0]}" ${c[0] === gcol(g.id)[0] ? 'checked' : ''}><i style="background:${c[1]}"></i></label>`).join('')}</div></div>`).join('')}
+  <label>Nouveau groupe<input name="newgroup" maxlength="40" placeholder="Ex. Famille"></label><div class="swr" role="radiogroup" aria-label="Couleur">${GCOL.map(c => `<label class="sw" title="${c[0]}"><input type="radio" name="newcolor" value="${c[0]}" ${c[0] === (GCOL.find(c => !gs.some(g => gcol(g.id)[0] === c[0])) || GCOL[0])[0] ? 'checked' : ''}><i style="background:${c[1]}"></i></label>`).join('')}</div>
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div></form>`;
 }
 
@@ -1831,8 +1843,8 @@ document.addEventListener('submit', e => {
     rebuildUsers(); openModal(inviteView(nm)); render(); return;
   }
   if (f.dataset.form === 'groups') {
-    myGroups().forEach(g => { const v = f.elements['g_' + g.id]; if (v && v.value.trim() && v.value.trim() !== g.name) put('groups', g.id, { name: v.value.trim() }); });
-    const nn = f.elements.newgroup.value.trim(); if (nn && !myGroups().some(g => g.name.toLowerCase() === nn.toLowerCase())) put('groups', uid(), { owner: me, name: nn });
+    myGroups().forEach(g => { const v = f.elements['g_' + g.id], c = f.elements['c_' + g.id], o = {}; if (v && v.value.trim() && v.value.trim() !== g.name) o.name = v.value.trim(); if (c && c.value && c.value !== gcol(g.id)[0]) o.color = c.value; if (Object.keys(o).length) put('groups', g.id, o); });
+    const nn = f.elements.newgroup.value.trim(); if (nn && !myGroups().some(g => g.name.toLowerCase() === nn.toLowerCase())) put('groups', uid(), { owner: me, name: nn, color: (f.elements.newcolor && f.elements.newcolor.value) || undefined });
     closeModal(); render(); toast('Groupes enregistrés'); return;
   }
   if (f.dataset.form === 'auth') { handleAuth(f); return; }
