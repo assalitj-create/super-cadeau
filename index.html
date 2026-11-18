@@ -528,7 +528,7 @@ function missingSettings() {
 }
 function bannerHtml() {
   const miss = missingSettings(), n = unreadN();
-  return (miss.length ? `<div class="setup"><b>Attention, tes réglages ne sont pas terminés.</b><span>Il te reste à choisir ${listFr(miss)}. Ça sert à tes initiales, et au partage des paiements.</span><button class="btn sm" data-act="profileForm">Régler maintenant</button></div>` : '')
+  return (miss.length ? `<div class="setup"><b>Attention, tes réglages ne sont pas terminés.</b><span>Il te reste à choisir ${listFr(miss)}. Ça sert à tes initiales, et au partage des paiements.</span><button class="btn sm" data-act="${miss.includes('ta couleur') ? 'profileForm' : 'duoForm'}">Régler maintenant</button></div>` : '')
     + (n ? `<div class="setup"><b>${n === 1 ? 'Tu as un nouveau message' : 'Tu as ' + n + ' nouveaux messages'}</b><button class="btn sm" data-act="openInbox">Lire</button></div>` : '');
 }
 function outBlock(pid) {
@@ -823,14 +823,20 @@ function colorSection() {
 }
 function foyerSection() {
   const f = foyerOf(me), other = f && f.members.find(x => x !== me);
-  const head = '<h3 class="psec">Mon duo</h3>';
+  const head = '';
   if (f) return head + `<p class="sub" style="margin-top:-4px">${f.payer === me ? `Tu paies avec ${esc(other)} : quand vous offrez un cadeau ensemble, ta part inclut la sienne, en précisant que c’est un duo avec ${esc(other)}.` : `${esc(other)} paie avec toi : quand vous offrez un cadeau ensemble, ta part est incluse dans la sienne.`}</p><button type="button" class="link" data-act="foyerEnd" data-id="${f.id}">Dissocier</button>`;
   const free = others(me).filter(u => !foyerOf(u));
   if (prefOf(me).duoNone) return head + `<p class="sub" style="margin-top:-4px">Tu paies seul(e) : tu comptes pour une part entière sur chaque cadeau.</p><button type="button" class="link" data-act="duoChange">Changer</button>`;
   return head + `<p class="sub" style="margin-top:-4px">Tu paies avec quelqu’un ? Sur un cadeau à plusieurs, vous ne comptez que pour une part, portée par toi, et les autres voient que c’est un duo.</p><div class="row" style="gap:8px"><select id="duoSel" style="flex:1"><option value="">Choisir…</option><option value="-">Personne, je paie seul(e)</option>${free.map(u => `<option>${esc(u)}</option>`).join('')}</select><button type="button" class="btn sec" data-act="duoSet">Valider</button></div>`;
 }
+function duoForm() {
+  return `<h2>Mon duo</h2>${foyerSection()}<div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Fermer</button></div>`;
+}
+function duoLabel() {
+  const f = foyerOf(me); if (f) return 'Avec ' + f.members.find(x => x !== me); return prefOf(me).duoNone ? 'Je paie seul(e)' : 'À choisir';
+}
 function profileForm() {
-  return `<h2>Mon profil</h2>${colorSection()}${foyerSection()}
+  return `<h2>Mon profil</h2>${colorSection()}
   <form data-form="pwchange"><h3 class="psec">Mon mot de passe</h3>
   <label>Mot de passe actuel<input name="cur" type="password" autocomplete="current-password" required></label>
   <label>Nouveau mot de passe<input name="pw" type="password" autocomplete="new-password" minlength="4" required></label>
@@ -1240,7 +1246,8 @@ function moreView() {
   return `<h2>Mon espace</h2>
   <h3 class="msec">Moi</h3>
   <div class="mlist">
-    ${row('profileForm', '', av, 'Mon profil', 'Couleur, duo, mot de passe', miss.length ? '<span class="mbadge warn">À régler</span>' : '')}
+    ${row('profileForm', '', av, 'Mon profil', 'Couleur, mot de passe', miss.includes('ta couleur') ? '<span class="mbadge warn">À régler</span>' : '')}
+    ${row('duoForm', '', IC.users, 'Mon duo', esc(duoLabel()), miss.includes('ton duo') ? '<span class="mbadge warn">À régler</span>' : '')}
     ${row('openInbox', '', IC.mail, 'Messages', 'Ta boîte de réception', un ? `<span class="mbadge">${un}</span>` : '')}
     ${row('nav', 'data-v="wishes"', IC.gift, 'Listes de souhaits', 'Tes envies et celles des autres')}
   </div>
@@ -1485,12 +1492,13 @@ const actions = {
   wishUser(t) { wishUser = t.dataset.v; render(); },
   giftNoImg() { const f = $('#sheet form[data-form="gift"]'); if (f) { f.elements.img.value = ''; f.elements.imgurl.value = ''; f.elements.file.value = ''; showPv(); } },
   wishNoImg() { const f = $('#sheet form[data-form="wish"]'); if (f) { f.elements.img.value = ''; f.elements.file.value = ''; wishPv(); } },
-  duoChange() { put('prefs', me, { duoNone: false, duoDone: false }); render(); openModal(profileForm()); },
+  duoForm() { openModal(duoForm()); },
+  duoChange() { put('prefs', me, { duoNone: false, duoDone: false }); render(); openModal(duoForm()); },
   openInbox() { inboxFresh = new Set(inboxOf().filter(m => !m.read).map(m => m.id)); inboxOf().forEach(m => { if (!m.read) put('msgs', m.id, { read: true }); }); view = 'inbox'; closeModal(); render(); },
   outForm(t) { openModal(outForm(t.dataset.id)); },
   outUndo(t) { const id = t.dataset.id, p = S.people[id]; del('outs', id + '|' + me); membersOf(id).filter(u => u !== me).forEach(u => sendMsg(u, `${me} participe de nouveau aux cadeaux pour ${p.name}.`, { kind: 'out', pid: id })); render(); toast('Tu participes de nouveau'); },
-  duoSet() { const v = $('#duoSel') && $('#duoSel').value; if (!v) { toast('Choisis d’abord une option'); return; } if (v === '-') { put('prefs', me, { duoDone: true, duoNone: true }); render(); openModal(profileForm()); toast('Noté, tu paies seul(e)'); return; } if (foyerOf(me) || foyerOf(v)) return; put('prefs', me, { duoDone: true, duoNone: false }); put('foyers', uid(), { members: [me, v], payer: me, c: Date.now() }); sendMsg(v, `${me} s’est mis en duo avec toi : sur les cadeaux à plusieurs, vous comptez pour une seule part, portée par ${me}. Tu peux te dissocier dans Mon profil.`, { kind: 'duo' }); render(); openModal(profileForm()); toast('Duo enregistré avec ' + v); },
-  foyerEnd(t) { const f0 = S.foyers[t.dataset.id], o0 = f0 && f0.members.find(x => x !== me); if (o0) sendMsg(o0, `${me} a mis fin à votre duo.`, { kind: 'duo' }); put('prefs', me, { duoDone: true, duoNone: true }); del('foyers', t.dataset.id); render(); openModal(profileForm()); toast('Duo dissocié'); },
+  duoSet() { const v = $('#duoSel') && $('#duoSel').value; if (!v) { toast('Choisis d’abord une option'); return; } if (v === '-') { put('prefs', me, { duoDone: true, duoNone: true }); render(); openModal(duoForm()); toast('Noté, tu paies seul(e)'); return; } if (foyerOf(me) || foyerOf(v)) return; put('prefs', me, { duoDone: true, duoNone: false }); put('foyers', uid(), { members: [me, v], payer: me, c: Date.now() }); sendMsg(v, `${me} s’est mis en duo avec toi : sur les cadeaux à plusieurs, vous comptez pour une seule part, portée par ${me}. Tu peux te dissocier dans Mon profil.`, { kind: 'duo' }); render(); openModal(duoForm()); toast('Duo enregistré avec ' + v); },
+  foyerEnd(t) { const f0 = S.foyers[t.dataset.id], o0 = f0 && f0.members.find(x => x !== me); if (o0) sendMsg(o0, `${me} a mis fin à votre duo.`, { kind: 'duo' }); put('prefs', me, { duoDone: true, duoNone: true }); del('foyers', t.dataset.id); render(); openModal(duoForm()); toast('Duo dissocié'); },
   claimWish(t) {
     const id = t.dataset.id, w = S.wishes[id], c = S.claims[id]; if (!w || w.owner === me) return;
     if (c && !c.d && c.by !== me) { toast('Quelqu’un l’a déjà pris'); render(); return; }
