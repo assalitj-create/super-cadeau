@@ -1474,9 +1474,14 @@ async function runPreview(force) {
   const f = $('#sheet form[data-form="gift"]'); if (!f) return;
   const url = f.elements.url.value.trim(), pv = $('#pv');
   if (!url) { pv.textContent = 'Colle d’abord un lien.'; return; }
-  pv.innerHTML = '<span class="spin" aria-hidden="true"></span><b>Lecture de la page en cours…</b><div class="sub">Titre, photo et prix : ça peut prendre jusqu’à 10 secondes.</div>';
+  const WAIT = ['Tu as le temps de te faire un café.', 'On va chercher les données du site…', 'Va faire un petit tour aux toilettes si tu veux, on t’attend.', 'Le site fait semblant de dormir, on le réveille.', 'On négocie avec le serveur, il fait son difficile.', 'Un pigeon voyageur apporte le prix.', 'Le père Noël vérifie sur sa liste.', 'On secoue le site pour faire tomber le prix.', 'Étire-toi, ça charge.', 'On demande poliment la photo au site.', 'Le prix a pris le chemin des écoliers.', 'Les lutins emballent les données.', 'Encore un instant, le hamster pédale à fond.', 'Tu peux compter jusqu’à dix, en général ça suffit.', 'On fouille les rayons du site…'];
+  let wi = Math.floor(Math.random() * WAIT.length);
+  const wmsg = () => { const m = WAIT[wi]; wi = (wi + 1 + Math.floor(Math.random() * (WAIT.length - 1))) % WAIT.length; return m; };
+  pv.innerHTML = '<span class="spin" aria-hidden="true"></span><b>Lecture de la page en cours…</b><div class="sub wmsg">' + WAIT[wi] + '</div>';
+  const wt = setInterval(() => { const el = pv.querySelector('.wmsg'); if (el) el.textContent = wmsg(); else clearInterval(wt); }, 3000);
   const pb = f.querySelector('[data-act="preview"]'); if (pb) { pb.disabled = true; pb.dataset.t = pb.textContent; pb.textContent = 'Recherche…'; }
   const r = await fetchPreview(url);
+  clearInterval(wt);
   if (pb) { pb.disabled = false; pb.textContent = pb.dataset.t || 'Aperçu'; }
   if (!$('#sheet form[data-form="gift"]')) return;
   const notes = [];
