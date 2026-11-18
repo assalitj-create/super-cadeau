@@ -350,6 +350,10 @@ header.gate .dot{position:absolute;border-radius:50%}
 @keyframes spup{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){#splash *{animation-duration:.01s!important;animation-delay:0s!important}}
 .prow{display:flex;flex-wrap:nowrap;gap:5px}.prow .btn{flex:0 1 auto;min-width:0;padding:0 5px;font-size:min(11px,2.8vw);letter-spacing:-.03em;white-space:nowrap;line-height:1;height:40px}
+.setup{background:#fff;border:2px solid var(--gold);border-radius:16px;padding:12px 14px;margin:0 0 12px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.setup span{font-size:13px;color:#4a5a73}
+nav button{position:relative}
+.ndot{position:absolute;top:4px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--red);color:#fff;font:700 10px/16px sans-serif;text-align:center;font-style:normal}
 .wimg{width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:10px;margin-bottom:8px;display:block}
 .psec{font-size:16px;font-weight:800;margin:18px 0 8px}
 h2+.psec{margin-top:6px}
@@ -430,6 +434,7 @@ const IC = {
   users: svg('<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14.5c2.5 0 4 1.5 4 4"/>'),
   more: svg('<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>'),
   me: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7"/>'),
+  mail: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
   fire: svg('<path d="M2.5 5.5h19M5 5.5V21M19 5.5V21M3 21h18"/><path d="M12 18.5c-2 0-3.2-1.2-3.2-2.7 0-1.7 1.6-2.4 1.9-4.2 1.4.9 4.5 2.7 4.5 5.4 0 .9-1.1 1.5-3.2 1.5z"/>'),
   lock: svg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>'),
   tree: svg('<path d="M12 2l-5 7h3l-4 6h4l-3 5h10l-3-5h4l-4-6h3z"/><path d="M12 20v2"/>'),
@@ -465,7 +470,7 @@ function daysToXmas() {
 
 const LOGO_W = "<svg aria-hidden='true' viewBox='10 2 80 92'><rect x='22' y='52' width='56' height='36' rx='4' fill='none' stroke='#fff' stroke-width='6'/><rect x='16' y='42' width='68' height='12' rx='3' fill='none' stroke='#fff' stroke-width='6'/><line x1='50' y1='42' x2='50' y2='88' stroke='#fff' stroke-width='6'/><polygon points='62,6 34,50 49,50 39,84 74,36 57,36 67,6' fill='#fff' stroke='#D8392B' stroke-width='5' stroke-linejoin='round' paint-order='stroke'/></svg>";
 const LOGO = "<svg aria-hidden='true' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='#FFF1D6'/><rect x='22' y='52' width='56' height='36' rx='4' fill='none' stroke='#D8392B' stroke-width='5'/><rect x='16' y='42' width='68' height='12' rx='3' fill='none' stroke='#D8392B' stroke-width='5'/><line x1='50' y1='42' x2='50' y2='88' stroke='#D8392B' stroke-width='5'/><polygon points='62,8 36,48 49,48 40,80 72,36 57,36 66,8' fill='#F4C542' stroke='#B72B20' stroke-width='3' stroke-linejoin='round'/></svg>";
-const emptyS = () => ({ people: {}, gifts: {}, budgets: {}, shares: {}, likes: {}, tickets: {}, auth: {}, groups: {}, pgroup: {}, users: {}, votes: {}, ballots: {}, wishes: {}, claims: {}, foyers: {} });
+const emptyS = () => ({ people: {}, gifts: {}, budgets: {}, shares: {}, likes: {}, tickets: {}, auth: {}, groups: {}, pgroup: {}, users: {}, votes: {}, ballots: {}, wishes: {}, claims: {}, foyers: {}, msgs: {}, outs: {}, prefs: {} });
 let S = emptyS(), me = null;
 try {
   const raw = JSON.parse(localStorage.getItem('cadeaux.v1') || 'null');
@@ -495,7 +500,46 @@ const sameF = (a, b) => { if (!a || !b || a === b) return false; const f = foyer
 const recipInDuo = (u, pid) => { const f = foyerOf(u), p = S.people[pid]; return !!f && !!p && f.members.includes(p.name); };
 const isPartner = (u, mem, pid) => { const f = foyerOf(u); return !!f && f.payer !== u && mem.includes(f.payer) && !recipInDuo(u, pid); };
 const foyerApplies = pid => { const m = membersOf(pid); return m.some(u => isPartner(u, m, pid)); };
-const membersOf = pid => S.people[pid] ? memOf(S.people[pid]) : USERS;
+const isOut = (pid, u) => { const o = S.outs && S.outs[pid + '|' + u]; return !!o && !o.d; };
+const membersOf = pid => S.people[pid] ? memOf(S.people[pid]).filter(u => !isOut(pid, u)) : USERS;
+const prefOf = u => (S.prefs && S.prefs[u] && !S.prefs[u].d) ? S.prefs[u] : {};
+const inboxOf = () => live('msgs').filter(m => m.to === me).sort((a, b) => (b.c || 0) - (a.c || 0));
+const unreadN = () => inboxOf().filter(m => !m.read).length;
+function sendMsg(to, text, extra) { put('msgs', uid(), Object.assign({ from: me, to, t: text, c: Date.now(), read: false }, extra || {})); }
+function missingSettings() {
+  const m = []; if (!(userColor(me) || prefOf(me).colorDone)) m.push('ta couleur'); if (!(foyerOf(me) || prefOf(me).duoDone)) m.push('ton duo');
+  return m;
+}
+function bannerHtml() {
+  const miss = missingSettings(), n = unreadN();
+  return (miss.length ? `<div class="setup"><b>Attention, tes réglages ne sont pas terminés.</b><span>Il te reste à choisir ${listFr(miss)}. Ça sert à tes initiales, et au partage des paiements.</span><button class="btn sm" data-act="profileForm">Régler maintenant</button></div>` : '')
+    + (n ? `<div class="setup"><b>${n === 1 ? 'Tu as un nouveau message' : 'Tu as ' + n + ' nouveaux messages'}</b><button class="btn sm" data-act="openInbox">Lire</button></div>` : '');
+}
+function outBlock(pid) {
+  const p = S.people[pid]; if (!p || isSoloP(p) || !memOf(p).includes(me)) return '';
+  if (isOut(pid, me)) return `<div class="note">Tu t’es dissocié de ce cadeau. <button class="link" data-act="outUndo" data-id="${pid}">Me ré-associer</button></div>`;
+  if (membersOf(pid).length < 2) return '';
+  return `<div class="note"><button class="link" data-act="outForm" data-id="${pid}">Me dissocier de ce cadeau</button></div>`;
+}
+function outForm(pid) {
+  const p = S.people[pid];
+  return `<form data-form="out" data-id="${pid}"><h2>Me dissocier</h2><p class="sub">Tu ne participeras plus aux cadeaux pour ${esc(p.name)}, et la part de chacun sera recalculée. Les autres reçoivent ton message dans leur boîte de réception.</p>
+  <label>Pourquoi ?<textarea name="why" rows="3" required maxlength="300" placeholder="Ex. C’est ma compagne, je m’en occupe de mon côté"></textarea></label>
+  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Me dissocier</button></div></form>`;
+}
+let inboxFresh = new Set();
+function inboxView() {
+  const rec = inboxOf(), sent = live('msgs').filter(m => m.from === me).sort((a, b) => (b.c || 0) - (a.c || 0)).slice(0, 15);
+  const when = c => c ? new Date(c).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  return `<div class="row between"><button class="btn ghost sm" data-act="nav" data-v="more">← Retour</button></div>
+  <h2 style="margin-top:14px">Messages</h2>
+  <form data-form="msg"><label>À<select name="to">${others(me).map(u => `<option>${esc(u)}</option>`).join('')}</select></label>
+  <label>Message<textarea name="t" rows="2" required maxlength="500" placeholder="Écris un mot…"></textarea></label>
+  <div class="actions"><button class="btn">Envoyer</button></div></form>
+  <h3>Reçus</h3>${rec.length ? rec.map(m => `<div class="card tk" style="${inboxFresh.has(m.id) ? 'border:2px solid var(--gold)' : ''}"><div class="sub"><b>${esc(m.from)}</b>, ${when(m.c)}${inboxFresh.has(m.id) ? ' · nouveau' : ''}</div><div class="tkdesc">${esc(m.t)}</div></div>`).join('') : '<p class="note">Aucun message pour l’instant.</p>'}
+  ${sent.length ? `<h3>Envoyés</h3>${sent.map(m => `<div class="card tk"><div class="sub">À <b>${esc(m.to)}</b>, ${when(m.c)}</div><div class="tkdesc">${esc(m.t)}</div></div>`).join('')}` : ''}`;
+}
+
 /* Les cadeaux personnels ne quittent jamais l'appareil : ils sont filtrés de toute sortie (synchro, export, code). */
 function privRec(c, id, rec) {
   if (c === 'people') return rec.scope === 'private';
@@ -514,7 +558,8 @@ function sharedState(withAuth) {
   if (withAuth) Object.keys(S.wishes || {}).forEach(k => { o.likes['wish|' + k] = S.wishes[k]; });
   if (withAuth) Object.keys(S.claims || {}).forEach(k => { o.likes['claim|' + k] = S.claims[k]; });
   if (withAuth) Object.keys(S.foyers || {}).forEach(k => { o.likes['foyer|' + k] = S.foyers[k]; });
-  delete o.foyers; delete o.claims; delete o.wishes; delete o.tickets; delete o.auth; delete o.groups; delete o.pgroup; delete o.users; delete o.votes; delete o.ballots;
+  if (withAuth) [['msgs', 'msg|'], ['outs', 'out|'], ['prefs', 'pref|']].forEach(([c, p]) => Object.keys(S[c] || {}).forEach(k => { o.likes[p + k] = S[c][k]; }));
+  delete o.msgs; delete o.outs; delete o.prefs; delete o.foyers; delete o.claims; delete o.wishes; delete o.tickets; delete o.auth; delete o.groups; delete o.pgroup; delete o.users; delete o.votes; delete o.ballots;
   return o;
 }
 
@@ -765,8 +810,8 @@ function foyerSection() {
   const head = '<h3 class="psec">Mon duo</h3>';
   if (f) return head + `<p class="sub" style="margin-top:-4px">${f.payer === me ? `Tu paies avec ${esc(other)} : quand vous offrez un cadeau ensemble, ta part inclut la sienne, en précisant que c’est un duo avec ${esc(other)}.` : `${esc(other)} paie avec toi : quand vous offrez un cadeau ensemble, ta part est incluse dans la sienne.`}</p><button type="button" class="link" data-act="foyerEnd" data-id="${f.id}">Dissocier</button>`;
   const free = others(me).filter(u => !foyerOf(u));
-  if (!free.length) return '';
-  return head + `<p class="sub" style="margin-top:-4px">Tu paies avec quelqu’un ? Sur un cadeau à plusieurs, vous ne comptez que pour une part, portée par toi, et les autres voient que c’est un duo.</p><div class="row" style="gap:8px"><select id="duoSel" style="flex:1"><option value="">Choisir quelqu’un</option>${free.map(u => `<option>${esc(u)}</option>`).join('')}</select><button type="button" class="btn sec" data-act="duoSet">Valider</button></div>`;
+  if (prefOf(me).duoNone) return head + `<p class="sub" style="margin-top:-4px">Tu paies seul(e) : tu comptes pour une part entière sur chaque cadeau.</p><button type="button" class="link" data-act="duoChange">Changer</button>`;
+  return head + `<p class="sub" style="margin-top:-4px">Tu paies avec quelqu’un ? Sur un cadeau à plusieurs, vous ne comptez que pour une part, portée par toi, et les autres voient que c’est un duo.</p><div class="row" style="gap:8px"><select id="duoSel" style="flex:1"><option value="">Choisir…</option><option value="-">Personne, je paie seul(e)</option>${free.map(u => `<option>${esc(u)}</option>`).join('')}</select><button type="button" class="btn sec" data-act="duoSet">Valider</button></div>`;
 }
 function profileForm() {
   return `<h2>Mon profil</h2>${colorSection()}${foyerSection()}
@@ -802,8 +847,8 @@ function render() {
       : '';
   hdr.innerHTML = `<div class="top"><h1>${LOGO_W}Super Cadeau</h1><div class="row" style="gap:12px;flex-wrap:nowrap"><button class="chip-user" data-act="profileForm" aria-label="Mon compte, mes informations"><i>${IC.me}</i>Mon compte</button></div></div>` + hero;
   const items = [['home', IC.gift, 'Qui'], ['ideas', IC.idea, 'Quoi'], ['track', IC.track, 'Quand'], ['budgets', IC.euro, 'Combien'], ['pay', IC.pay, 'Comment'], ['more', IC.more, 'Plus']];
-  nav.innerHTML = items.map(([k, i, l]) => `<button data-act="nav" data-v="${k}" class="${(view === k || (view === 'person' && k === 'home') || (k === 'more' && (view === 'tickets' || view === 'sync' || view === 'wishes'))) ? 'on' : ''}">${i}${l}</button>`).join('');
-  app.innerHTML = ({ home: homeView, person: personView, ideas: ideasView, track: trackView, budgets: budgetsView, pay: payView, more: moreView, wishes: wishesView, tickets: ticketsView, sync: syncView }[view] || homeView)();
+  nav.innerHTML = items.map(([k, i, l]) => `<button data-act="nav" data-v="${k}" class="${(view === k || (view === 'person' && k === 'home') || (k === 'more' && (view === 'tickets' || view === 'sync' || view === 'wishes' || view === 'inbox'))) ? 'on' : ''}">${i}${l}${k === 'more' && unreadN() ? `<i class="ndot">${unreadN()}</i>` : ''}</button>`).join('');
+  app.innerHTML = ({ home: homeView, person: personView, ideas: ideasView, track: trackView, budgets: budgetsView, pay: payView, more: moreView, inbox: inboxView, wishes: wishesView, tickets: ticketsView, sync: syncView }[view] || homeView)();
 }
 
 /* ---- Accueil ---- */
@@ -850,7 +895,7 @@ function homeView() {
   const mine = people.reduce((s, p) => s + (budgetOf(p.id, me) || 0), 0);
   const groups = myGroups();
   if (fGroup !== 'all' && fGroup !== 'none' && !groups.some(g => g.id === fGroup)) fGroup = 'all';
-  let h = `<div class="stats"><div class="stat"><b>${people.length}</b><span>personnes</span></div><div class="stat"><b>${gifts.length}</b><span>idées</span></div><div class="stat"><b>${eur(mine)}</b><span>mon budget</span></div></div>
+  let h = bannerHtml() + `<div class="stats"><div class="stat"><b>${people.length}</b><span>personnes</span></div><div class="stat"><b>${gifts.length}</b><span>idées</span></div><div class="stat"><b>${eur(mine)}</b><span>mon budget</span></div></div>
   <button class="card pcard" data-act="nav" data-v="wishes" style="margin-top:14px"><div class="thumbs"><i>${IC.gift}</i></div><div class="grow"><div class="pname">Listes de souhaits</div><div class="pmeta">Ce que chacun aimerait recevoir</div></div></button>
   <div class="row between" style="margin:18px 0 12px"><h3 style="margin:0">À qui offrir un cadeau ?</h3><button class="btn" data-act="addPerson">Ajouter une personne</button></div>`;
   if (!people.length) return h + `<div class="empty">${IC.gift}<div>Ajoute la première personne à qui vous voulez faire un cadeau.</div></div>`;
@@ -1030,7 +1075,7 @@ function personView() {
   const os = membersOf(cur).filter(u => u !== me), mb = budgetOf(cur, me), bt = budgetTotal(cur), ch = chosenTotal(cur), sp = spentTotal(cur), priv = isSolo(cur);
   const rank = { choisi: 0, achete: 1, recupere: 2, idee: 3, offert: 4 };
   const gs = giftsOf(cur).sort((a, b) => (rank[a.status] - rank[b.status]) || b.u - a.u);
-  return `${priv ? `<p class="note">${S.people[cur].scope === 'mine' ? 'Pour toi seul : les autres ne le voient pas.' : 'Cette personne reste uniquement sur cet appareil. Ouvre « Modifier » pour la rendre visible sur tous tes appareils.'}</p>` : ''}
+  return `${outBlock(cur)}${priv ? `<p class="note">${S.people[cur].scope === 'mine' ? 'Pour toi seul : les autres ne le voient pas.' : 'Cette personne reste uniquement sur cet appareil. Ouvre « Modifier » pour la rendre visible sur tous tes appareils.'}</p>` : ''}
   <div class="card paper">
     <div class="row" style="align-items:flex-end">
       <label class="grow" style="margin:0">Mon budget (${esc(me)})<input type="number" min="0" step="1" inputmode="decimal" placeholder="€" value="${mb == null ? '' : mb}" data-bud="${cur}"></label>
@@ -1176,6 +1221,7 @@ function moreView() {
   const open = live('tickets').filter(t => t.status !== 'resolu').length;
   return `<h2>Plus</h2>
   <button class="card pcard" data-act="nav" data-v="wishes"><div class="thumbs"><i>${IC.gift}</i></div><div class="grow"><div class="pname">Listes de souhaits</div><div class="pmeta">Note tes envies et consulte celles des autres</div></div></button>
+  <button class="card pcard" data-act="openInbox"><div class="thumbs"><i>${IC.mail}</i></div><div class="grow"><div class="pname">Messages${unreadN() ? ` (${unreadN()} nouveau${unreadN() > 1 ? 'x' : ''})` : ''}</div><div class="pmeta">Ta boîte de réception</div></div></button>
   <button class="card pcard" data-act="nav" data-v="tickets"><div class="thumbs"><i>${IC.ticket}</i></div><div class="grow"><div class="pname">Tickets</div><div class="pmeta">Signaler un problème ou proposer une amélioration${open ? `, ${open} ouvert${open > 1 ? 's' : ''}` : ''}</div></div></button>
   <button class="card pcard" data-act="addUser"><div class="thumbs"><i>${IC.users}</i></div><div class="grow"><div class="pname">Ajouter un utilisateur</div><div class="pmeta">Invite quelqu’un à utiliser Super Cadeau avec vous</div></div></button>
   <button class="card pcard" data-act="profileForm"><div class="thumbs"><i style="background:${colorOf(me)};color:#fff;font-style:normal;font-weight:800;font-size:18px">${esc(me[0])}</i></div><div class="grow"><div class="pname">Mon profil</div><div class="pmeta">Ma couleur et mon mot de passe</div></div></button>
@@ -1317,7 +1363,7 @@ function parseIncoming(txt) {
 function merge(inc, allowAuth) {
   let n = 0;
   const take = (c, k, rec) => { const cur = S[c][k]; if (rec && typeof rec === 'object' && (!cur || (rec.u || 0) > (cur.u || 0))) { S[c][k] = rec; n++; } };
-  COLL.forEach(c => { const m = inc[c] || {}; Object.keys(m).forEach(k => { if (c === 'likes' && k.indexOf('ticket|') === 0) take('tickets', k.slice(7), m[k]); else if (c === 'likes' && k.indexOf('auth|') === 0) { if (allowAuth) take('auth', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('user|') === 0) { if (allowAuth) take('users', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('pgroup|') === 0) { if (allowAuth) take('pgroup', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('group|') === 0) { if (allowAuth) take('groups', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('foyer|') === 0) { if (allowAuth) take('foyers', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('claim|') === 0) { if (allowAuth) take('claims', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('wish|') === 0) { if (allowAuth) take('wishes', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('ballot|') === 0) { if (allowAuth) take('ballots', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('vote|') === 0) { if (allowAuth) take('votes', k.slice(5), m[k]); } else take(c, k, m[k]); }); });
+  COLL.forEach(c => { const m = inc[c] || {}; Object.keys(m).forEach(k => { if (c === 'likes' && k.indexOf('ticket|') === 0) take('tickets', k.slice(7), m[k]); else if (c === 'likes' && k.indexOf('auth|') === 0) { if (allowAuth) take('auth', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('user|') === 0) { if (allowAuth) take('users', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('pgroup|') === 0) { if (allowAuth) take('pgroup', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('group|') === 0) { if (allowAuth) take('groups', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('msg|') === 0) { if (allowAuth) take('msgs', k.slice(4), m[k]); } else if (c === 'likes' && k.indexOf('out|') === 0) { if (allowAuth) take('outs', k.slice(4), m[k]); } else if (c === 'likes' && k.indexOf('pref|') === 0) { if (allowAuth) take('prefs', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('foyer|') === 0) { if (allowAuth) take('foyers', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('claim|') === 0) { if (allowAuth) take('claims', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('wish|') === 0) { if (allowAuth) take('wishes', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('ballot|') === 0) { if (allowAuth) take('ballots', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('vote|') === 0) { if (allowAuth) take('votes', k.slice(5), m[k]); } else take(c, k, m[k]); }); });
   Object.keys(inc.tickets || {}).forEach(k => take('tickets', k, inc.tickets[k]));
   if (n) rebuildUsers();
   persist(); return n;
@@ -1348,7 +1394,7 @@ const actions = {
   retryAuth() { syncNow(true); },
   switch() { closeModal(); me = null; pending = null; TOK = ''; try { localStorage.removeItem('cadeaux.me'); localStorage.removeItem('cadeaux.tok'); } catch (e) {} render(); },
   profileForm() { openModal(profileForm()); },
-  setColor(t) { setUserColor(me, t.dataset.v); render(); openModal(profileForm()); toast('Couleur modifiée'); },
+  setColor(t) { setUserColor(me, t.dataset.v); put('prefs', me, { colorDone: true }); render(); openModal(profileForm()); toast('Couleur modifiée'); },
   makeMine(t) { const id = t.dataset.id; put('people', id, { scope: 'mine' }); closeModal(); render(); toast('Visible par toi seul, sur tous tes appareils'); },
   groupsForm() { openModal(groupsForm()); },
   gfilter(t) { fGroup = t.dataset.v; render(); },
@@ -1414,8 +1460,12 @@ const actions = {
   wishUser(t) { wishUser = t.dataset.v; render(); },
   giftNoImg() { const f = $('#sheet form[data-form="gift"]'); if (f) { f.elements.img.value = ''; f.elements.imgurl.value = ''; f.elements.file.value = ''; showPv(); } },
   wishNoImg() { const f = $('#sheet form[data-form="wish"]'); if (f) { f.elements.img.value = ''; f.elements.file.value = ''; wishPv(); } },
-  duoSet() { const v = $('#duoSel') && $('#duoSel').value; if (!v) { toast('Choisis d’abord une personne'); return; } if (foyerOf(me) || foyerOf(v)) return; put('foyers', uid(), { members: [me, v], payer: me, c: Date.now() }); render(); openModal(profileForm()); toast('Duo enregistré avec ' + v); },
-  foyerEnd(t) { del('foyers', t.dataset.id); render(); openModal(profileForm()); toast('Duo dissocié'); },
+  duoChange() { put('prefs', me, { duoNone: false, duoDone: false }); render(); openModal(profileForm()); },
+  openInbox() { inboxFresh = new Set(inboxOf().filter(m => !m.read).map(m => m.id)); inboxOf().forEach(m => { if (!m.read) put('msgs', m.id, { read: true }); }); view = 'inbox'; closeModal(); render(); },
+  outForm(t) { openModal(outForm(t.dataset.id)); },
+  outUndo(t) { const id = t.dataset.id, p = S.people[id]; del('outs', id + '|' + me); membersOf(id).filter(u => u !== me).forEach(u => sendMsg(u, `${me} participe de nouveau aux cadeaux pour ${p.name}.`, { kind: 'out', pid: id })); render(); toast('Tu participes de nouveau'); },
+  duoSet() { const v = $('#duoSel') && $('#duoSel').value; if (!v) { toast('Choisis d’abord une option'); return; } if (v === '-') { put('prefs', me, { duoDone: true, duoNone: true }); render(); openModal(profileForm()); toast('Noté, tu paies seul(e)'); return; } if (foyerOf(me) || foyerOf(v)) return; put('prefs', me, { duoDone: true, duoNone: false }); put('foyers', uid(), { members: [me, v], payer: me, c: Date.now() }); render(); openModal(profileForm()); toast('Duo enregistré avec ' + v); },
+  foyerEnd(t) { put('prefs', me, { duoDone: true, duoNone: true }); del('foyers', t.dataset.id); render(); openModal(profileForm()); toast('Duo dissocié'); },
   claimWish(t) {
     const id = t.dataset.id, w = S.wishes[id], c = S.claims[id]; if (!w || w.owner === me) return;
     if (c && !c.d && c.by !== me) { toast('Quelqu’un l’a déjà pris'); render(); return; }
@@ -1498,6 +1548,13 @@ document.addEventListener('submit', e => {
     const pd = E.paid.value.trim();
     setStatus(id, E.status.value, { buyer: E.buyer.value, bdate: E.bdate.value, paid: pd === '' ? null : Math.max(0, parseFloat(pd) || 0), store: E.store.value.trim(), order: E.order.value.trim() });
     closeModal(); render(); toast('Suivi enregistré');
+  } else if (f.dataset.form === 'out') {
+    const p = S.people[id]; if (!p) return; const why = E.why.value.trim(); if (!why) return;
+    put('outs', id + '|' + me, { pid: id, user: me, why, c: Date.now() });
+    membersOf(id).filter(u => u !== me).forEach(u => sendMsg(u, `${me} se dissocie des cadeaux pour ${p.name} : « ${why} »`, { kind: 'out', pid: id }));
+    closeModal(); render(); toast('Tu es dissocié, les autres sont prévenus');
+  } else if (f.dataset.form === 'msg') {
+    const to = E.to.value, t = E.t.value.trim(); if (!to || !t) return; sendMsg(to, t); E.t.value = ''; render(); toast('Message envoyé');
   } else if (f.dataset.form === 'person') {
     const old = S.people[id] || {}, scope = isNew ? (E.scope.value || 'shared') : (old.scope || 'shared');
     const checked = Array.from(f.querySelectorAll('input[name=mem]:checked')).map(x => x.value);
