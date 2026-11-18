@@ -418,6 +418,7 @@ h2+.psec{margin-top:6px}
 #pv:has(.spin){background:#EDF3FA;border-radius:14px;padding:12px 14px}
 .sheet::before{content:"";position:sticky;top:-26px;display:block;width:44px;height:5px;border-radius:3px;background:#C9D3E0;margin:-18px auto 14px}
 .gdimg{background:#EDF3FA;border-radius:16px;margin:0 0 14px;text-align:center;overflow:hidden}.gdimg img{max-width:100%;max-height:260px;object-fit:contain;display:block;margin:0 auto}
+.pfor{position:absolute;right:10px;top:10px;max-width:60%;padding:4px 12px;border-radius:99px;font-size:13px;font-weight:800;background:#14243B;color:#fff;box-shadow:0 1px 5px rgba(0,0,0,.25);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -1015,10 +1016,10 @@ function giftCard(g, showPerson) {
   return `<article class="gift">
     <div class="gimg" data-act="giftView" data-id="${g.id}" style="cursor:pointer">${IC.gift}${g.img ? `<img src="${esc(g.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onload="if(this.naturalWidth<60||this.naturalHeight<60)this.remove()" onerror="this.remove()">` : ''}
       <span class="tagw">${g.price != null && g.price !== '' ? `<span class="tag">${eur(+g.price)}</span>` : `<button type="button" class="tag none" data-act="editGift" data-id="${g.id}" style="border:0;cursor:pointer;font:inherit">Prix ? Ajouter</button>`}</span>
-      ${g.status !== 'idee' ? `<span class="st ${g.status}">${STATUS[g.status]}</span>` : ''}</div>
+      ${g.status !== 'idee' ? `<span class="st ${g.status}">${STATUS[g.status]}</span>` : ''}${showPerson && p ? `<span class="pfor">Pour ${esc(p.name)}</span>` : ''}</div>
     <div class="gbody">
       <div class="gtitle" data-act="giftView" data-id="${g.id}" style="cursor:pointer">${esc(g.t)}</div>
-      <div class="meta">Proposé par <b>${esc(g.by)}</b>${showPerson && p ? ` pour <b>${esc(p.name)}</b>` : ''}</div>
+      <div class="meta">Proposé par <b>${esc(g.by)}</b></div>
       ${g.note ? `<div class="meta">${esc(g.note)}</div>` : ''}
       ${g.url ? `<div><a class="glink" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer">${esc(domain(g.url))}</a></div>` : ''}
       ${pl ? `<div class="buyline">${pl}</div>` : ''}
