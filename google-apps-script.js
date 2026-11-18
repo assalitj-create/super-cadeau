@@ -69,6 +69,14 @@ function reply_(o) {
 }
 
 function doGet(e) {
+  if (e && e.parameter && e.parameter.preview) {
+    // Lecture d'une page produit (titre, image, prix) pour l'appli
+    try {
+      var r = UrlFetchApp.fetch(e.parameter.preview, { followRedirects: true, muteHttpExceptions: true,
+        headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36', 'Accept-Language': 'fr-FR,fr;q=0.9' } });
+      return reply_({ ok: true, html: r.getContentText().slice(0, 400000), url: e.parameter.preview });
+    } catch (err) { return reply_({ ok: false, error: String(err) }); }
+  }
   try { return reply_(handle_(null)); } catch (err) { return reply_({ ok: false, error: String(err) }); }
 }
 
