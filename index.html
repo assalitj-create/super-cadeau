@@ -738,25 +738,26 @@ function slugTitle(url) {
     return seg.charAt(0).toUpperCase() + seg.slice(1);
   } catch (e) { return ''; }
 }
+function tfetch(u, ms) { const c = new AbortController(), t = setTimeout(() => c.abort(), ms || 9000); return fetch(u, { signal: c.signal }).finally(() => clearTimeout(t)); }
 async function fetchPreview(url) {
   if (isImgUrl(url)) return { img: url };
   const asin = (url.match(/\/(?:dp|gp\/product|d)\/([A-Z0-9]{10})(?:[/?]|$)/i) || [])[1];
   const viaMicrolink = async () => {
     try {
-      const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url)), j = await r.json();
+      const r = await tfetch('https://api.microlink.io/?url=' + encodeURIComponent(url)), j = await r.json();
       if (j && j.status === 'success' && j.data) return j.data;
     } catch (e) {}
     return null;
   };
   const viaServer = async () => {
     if (!syncUrl) return null;
-    try { const r = await fetch(syncUrl + (syncUrl.includes('?') ? '&' : '?') + 'preview=' + encodeURIComponent(url)), j = await r.json(); if (j && j.ok && j.html && j.html.length > 200) return pageInfo(j.html, url); } catch (e) {}
+    try { const r = await tfetch(syncUrl + (syncUrl.includes('?') ? '&' : '?') + 'preview=' + encodeURIComponent(url)), j = await r.json(); if (j && j.ok && j.html && j.html.length > 200) return pageInfo(j.html, url); } catch (e) {}
     return null;
   };
   const viaPage = async () => {
     const sv = await viaServer(); if (sv && (sv.title || sv.imgs.length || sv.price)) return sv;
     for (const px of ['https://api.allorigins.win/raw?url=', 'https://corsproxy.io/?']) {
-      try { const r = await fetch(px + encodeURIComponent(url)), html = await r.text(); if (html && html.length > 200) return pageInfo(html, url); } catch (e) {}
+      try { const r = await tfetch(px + encodeURIComponent(url)), html = await r.text(); if (html && html.length > 200) return pageInfo(html, url); } catch (e) {}
     }
     return null;
   };
@@ -1440,7 +1441,7 @@ async function runPreview(force) {
     if (m && /amazon\.|amzn\./i.test(url)) { const u = `https://m.media-amazon.com/images/P/${m[1].toUpperCase()}.01._SCLZZZZZZZ_.jpg`; f.elements.img.value = u; f.elements.imgurl.value = u; }
   }
   if (f.elements.img.value.trim()) showPv();
-  else pv.textContent = 'Aucune image utilisable trouvée automatiquement (site protégé ?). Colle l’adresse d’une image dans le champ ci-dessus.';
+  else pv.textContent = 'Ce site refuse la lecture automatique (lien court Amazon, par exemple). Saisis le nom et le prix, et ajoute une photo ou l’adresse d’une image.';
   if (notes.length) pv.insertAdjacentHTML('beforeend', notes.map(n => `<div class="pvnote">${esc(n)}</div>`).join(''));
 }
 function showPv() {
