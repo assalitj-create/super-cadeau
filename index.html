@@ -350,6 +350,7 @@ header.gate .dot{position:absolute;border-radius:50%}
 @keyframes spup{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){#splash *{animation-duration:.01s!important;animation-delay:0s!important}}
 .prow{display:flex;flex-wrap:nowrap;gap:5px}.prow .btn{flex:0 1 auto;min-width:0;padding:0 5px;font-size:min(11px,2.8vw);letter-spacing:-.03em;white-space:nowrap;line-height:1;height:40px}
+.hl{background:#F4C542;color:#14243B;padding:1px 8px;border-radius:8px;font-weight:800}
 .setup{background:#fff;border:2px solid var(--gold);border-radius:16px;padding:12px 14px;margin:0 0 12px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .setup span{font-size:13px;color:#4a5a73}
 nav button{position:relative}
@@ -520,7 +521,7 @@ const isOut = (pid, u) => { const o = S.outs && S.outs[pid + '|' + u]; return !!
 const membersOf = pid => S.people[pid] ? memOf(S.people[pid]).filter(u => !isOut(pid, u)) : USERS;
 const prefOf = u => (S.prefs && S.prefs[u] && !S.prefs[u].d) ? S.prefs[u] : {};
 const inboxOf = () => live('msgs').filter(m => m.to === me).sort((a, b) => (b.c || 0) - (a.c || 0));
-const unreadN = () => inboxOf().filter(m => !m.read).length;
+const unreadN = () => inboxOf().filter(m => !m.read || (m.kind === 'invite' && m.state === 'pending')).length;
 function sendMsg(to, text, extra) { put('msgs', uid(), Object.assign({ from: me, to, t: text, c: Date.now(), read: false }, extra || {})); }
 function missingSettings() {
   const m = []; if (!(userColor(me) || prefOf(me).colorDone)) m.push('ta couleur'); if (!(foyerOf(me) || prefOf(me).duoDone)) m.push('ton duo');
@@ -544,6 +545,19 @@ function outForm(pid) {
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Me dissocier</button></div></form>`;
 }
 let inboxFresh = new Set();
+function inviteUi(m) {
+  if (m.kind !== 'invite') return '';
+  if (m.state === 'accepted') return '<div class="sub" style="margin-top:6px"><span class="badge ok">Tu participes</span></div>';
+  if (m.state === 'declined') return '<div class="sub" style="margin-top:6px"><span class="badge bad">Refusé</span></div>';
+  return `<div class="actions" style="margin-top:10px;justify-content:flex-start"><button class="btn" data-act="invAccept" data-id="${m.id}">Oui, je participe</button><button class="btn ghost" data-act="invDecline" data-id="${m.id}">Non merci</button></div>`;
+}
+function budgetPrompt(pid) {
+  const p = S.people[pid], b = budgetOf(pid, me);
+  return `<form data-form="budget" data-id="${pid}"><h2>Ton budget</h2>
+  <p class="sub">Combien peux-tu mettre pour <mark class="hl">${esc(p.name)}</mark> ?</p>
+  <label>Montant (€)<input name="a" type="number" min="0" step="0.01" inputmode="decimal" required value="${b == null ? '' : b}" placeholder="Ex. 40"></label>
+  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Plus tard</button><button class="btn">Enregistrer</button></div></form>`;
+}
 function inboxView() {
   const rec = inboxOf(), sent = live('msgs').filter(m => m.from === me).sort((a, b) => (b.c || 0) - (a.c || 0)).slice(0, 15);
   const when = c => c ? new Date(c).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
@@ -552,7 +566,7 @@ function inboxView() {
   <form data-form="msg"><label>À<select name="to">${others(me).map(u => `<option>${esc(u)}</option>`).join('')}</select></label>
   <label>Message<textarea name="t" rows="2" required maxlength="500" placeholder="Écris un mot…"></textarea></label>
   <div class="actions"><button class="btn">Envoyer</button></div></form>
-  <h3>Reçus</h3>${rec.length ? rec.map(m => `<div class="card tk" style="${inboxFresh.has(m.id) ? 'border:2px solid var(--gold)' : ''}"><div class="sub"><b>${esc(m.from)}</b>, ${when(m.c)}${inboxFresh.has(m.id) ? ' · nouveau' : ''}</div><div class="tkdesc">${esc(m.t)}</div></div>`).join('') : '<p class="note">Aucun message pour l’instant.</p>'}
+  <h3>Reçus</h3>${rec.length ? rec.map(m => `<div class="card tk" style="${inboxFresh.has(m.id) ? 'border:2px solid var(--gold)' : ''}"><div class="sub"><b>${esc(m.from)}</b>, ${when(m.c)}${inboxFresh.has(m.id) ? ' · nouveau' : ''}</div><div class="tkdesc">${esc(m.t)}</div>${inviteUi(m)}</div>`).join('') : '<p class="note">Aucun message pour l’instant.</p>'}
   ${sent.length ? `<h3>Envoyés</h3>${sent.map(m => `<div class="card tk"><div class="sub">À <b>${esc(m.to)}</b>, ${when(m.c)}</div><div class="tkdesc">${esc(m.t)}</div></div>`).join('')}` : ''}`;
 }
 
@@ -1248,7 +1262,7 @@ function moreView() {
   <div class="mlist">
     ${row('profileForm', '', av, 'Mon profil', 'Couleur, mot de passe', miss.includes('ta couleur') ? '<span class="mbadge warn">À régler</span>' : '')}
     ${row('duoForm', '', IC.users, 'Mon duo', esc(duoLabel()), miss.includes('ton duo') ? '<span class="mbadge warn">À régler</span>' : '')}
-    ${row('openInbox', '', IC.mail, 'Messages', 'Ta boîte de réception', un ? `<span class="mbadge">${un}</span>` : '')}
+    ${row('openInbox', '', IC.mail, 'Messages', 'Ta boîte de réception', un ? `<span class="mbadge">${un} message${un > 1 ? 's' : ''}</span>` : '')}
     ${row('nav', 'data-v="wishes"', IC.gift, 'Listes de souhaits', 'Tes envies et celles des autres')}
   </div>
   <h3 class="msec">L’application</h3>
@@ -1325,8 +1339,8 @@ function syncView() {
 /* ================= Formulaires ================= */
 function personForm(p) {
   p = p || {};
-  const os = others(me), cur = p.id ? memOf(p) : [];
-  const boxes = `<div class="mbox"><div class="sub" style="margin:8px 0 6px;font-weight:500">Partagé avec</div><div class="chips">${os.map(o => `<label class="chip"><input type="checkbox" name="mem" value="${o}" ${cur.includes(o) ? 'checked' : ''}>${esc(o)}</label>`).join('')}</div><p id="sharerr" class="alert" hidden>Personne n’est sélectionné pour le partage. Coche au moins une personne, ou choisis « Cadeau personnel ».</p></div>`;
+  const os = others(me), cur = p.id ? memOf(p).concat(p.invited || []) : [];
+  const boxes = `<div class="mbox"><div class="sub" style="margin:8px 0 6px;font-weight:500">Partagé avec</div><div class="chips">${os.map(o => `<label class="chip"><input type="checkbox" name="mem" value="${o}" ${cur.includes(o) ? 'checked' : ''}>${esc(o)}${p.id && (p.invited || []).includes(o) ? ' (invité)' : ''}</label>`).join('')}</div><p id="sharerr" class="alert" hidden>Personne n’est sélectionné pour le partage. Coche au moins une personne, ou choisis « Cadeau personnel ».</p></div>`;
   const gs = myGroups(), gcur = p.id ? groupOf(p.id) : (fGroup !== 'all' && fGroup !== 'none' ? fGroup : '');
   const grp = `<div class="row2" style="margin-top:4px"><label>Mon groupe<select name="group"><option value="">Aucun groupe</option>${gs.map(g => `<option value="${g.id}" ${g.id === gcur ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}</select></label><label>Nouveau groupe<input name="newgroup" maxlength="40" placeholder="Ex. Famille"></label></div>`;
   return `<form data-form="person" data-id="${p.id || ''}"><h2>${p.id ? 'Modifier' : 'Nouvelle personne'}</h2>
@@ -1494,6 +1508,22 @@ const actions = {
   wishNoImg() { const f = $('#sheet form[data-form="wish"]'); if (f) { f.elements.img.value = ''; f.elements.file.value = ''; wishPv(); } },
   duoForm() { openModal(duoForm()); },
   duoChange() { put('prefs', me, { duoNone: false, duoDone: false }); render(); openModal(duoForm()); },
+  invAccept(t) {
+    const id = t.dataset.id, m = S.msgs[id]; if (!m || m.to !== me || m.state !== 'pending') return;
+    const p = S.people[m.pid]; if (!p) { toast('Ce cadeau n’existe plus'); return; }
+    put('people', m.pid, { members: memOf(p).includes(me) ? memOf(p) : memOf(p).concat(me), invited: (p.invited || []).filter(x => x !== me) });
+    put('msgs', id, { state: 'accepted', read: true });
+    sendMsg(m.from, `${me} participe au cadeau pour ${p.name}.`, { kind: 'info' });
+    render(); openModal(budgetPrompt(m.pid));
+  },
+  invDecline(t) {
+    const id = t.dataset.id, m = S.msgs[id]; if (!m || m.to !== me || m.state !== 'pending') return;
+    const p = S.people[m.pid];
+    if (p) put('people', m.pid, { invited: (p.invited || []).filter(x => x !== me) });
+    put('msgs', id, { state: 'declined', read: true });
+    sendMsg(m.from, `${me} ne participe pas au cadeau pour ${p ? p.name : 'cette personne'}.`, { kind: 'info' });
+    render(); toast('Refus envoyé');
+  },
   openInbox() { inboxFresh = new Set(inboxOf().filter(m => !m.read).map(m => m.id)); inboxOf().forEach(m => { if (!m.read) put('msgs', m.id, { read: true }); }); view = 'inbox'; closeModal(); render(); },
   outForm(t) { openModal(outForm(t.dataset.id)); },
   outUndo(t) { const id = t.dataset.id, p = S.people[id]; del('outs', id + '|' + me); membersOf(id).filter(u => u !== me).forEach(u => sendMsg(u, `${me} participe de nouveau aux cadeaux pour ${p.name}.`, { kind: 'out', pid: id })); render(); toast('Tu participes de nouveau'); },
@@ -1581,6 +1611,9 @@ document.addEventListener('submit', e => {
     const pd = E.paid.value.trim();
     setStatus(id, E.status.value, { buyer: E.buyer.value, bdate: E.bdate.value, paid: pd === '' ? null : Math.max(0, parseFloat(pd) || 0), store: E.store.value.trim(), order: E.order.value.trim() });
     closeModal(); render(); toast('Suivi enregistré');
+  } else if (f.dataset.form === 'budget') {
+    const v = E.a.value.trim(); if (v === '') return;
+    put('budgets', id + '|' + me, { a: Math.max(0, parseFloat(v) || 0) }); closeModal(); render(); toast('Budget enregistré');
   } else if (f.dataset.form === 'out') {
     const p = S.people[id]; if (!p) return; const why = E.why.value.trim(); if (!why) return;
     put('outs', id + '|' + me, { pid: id, user: me, why, c: Date.now() });
@@ -1592,10 +1625,14 @@ document.addEventListener('submit', e => {
     const old = S.people[id] || {}, scope = isNew ? (E.scope.value || 'shared') : (old.scope || 'shared');
     const checked = Array.from(f.querySelectorAll('input[name=mem]:checked')).map(x => x.value);
     if (scope === 'shared' && !checked.length) { const x = $('#sharerr'); if (x) { x.hidden = false; x.scrollIntoView({ block: 'nearest' }); } return; }
-    const members = USERS.filter(u => u === me || checked.includes(u));
-    put('people', id, scope === 'private' || scope === 'mine' ? { name: E.name.value.trim(), scope, owner: old.owner || me } : { name: E.name.value.trim(), scope, members });
+    const oldM = isNew ? [] : memOf(old), oldI = old.invited || [];
+    const members = USERS.filter(u => u === me || (checked.includes(u) && oldM.includes(u)));
+    const invited = checked.filter(u => u !== me && !oldM.includes(u));
+    const fresh = invited.filter(u => !oldI.includes(u));
+    put('people', id, scope === 'private' || scope === 'mine' ? { name: E.name.value.trim(), scope, owner: old.owner || me } : { name: E.name.value.trim(), scope, members, invited });
+    if (scope === 'shared') fresh.forEach(u => sendMsg(u, `${me} souhaite vous ajouter à la liste du cadeau pour ${E.name.value.trim()}. Souhaitez-vous participer ?`, { kind: 'invite', pid: id, state: 'pending' }));
     setGroup(id, E.group.value, E.newgroup.value);
-    closeModal(); render(); if (isNew) toast(scope === 'private' || scope === 'mine' ? 'Personne ajoutée, visible par toi seul' : 'Personne ajoutée, visible par ' + (listFr(members.filter(u => u !== me)) || 'toi seulement'));
+    closeModal(); render(); if (isNew) toast(scope === 'private' || scope === 'mine' ? 'Personne ajoutée, visible par toi seul' : (invited.length ? 'Invitation envoyée à ' + listFr(invited) : 'Personne ajoutée'));
   } else {
     const p = E.price.value, old = S.gifts[id] || {};
     const st = E.status.value, log = (old.log || []).slice(); if (old.status !== st) log.push({ s: st, by: me, at: Date.now() });
