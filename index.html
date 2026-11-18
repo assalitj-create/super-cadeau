@@ -1151,6 +1151,7 @@ function tieIdeas(pid) {
   const mem = membersOf(pid); if (isSolo(pid) || mem.length < 2) return null;
   const ideas = giftsOf(pid).filter(g => g.status === 'idee'); if (ideas.length < 2) return null;
   const cnt = g => mem.filter(u => likedBy(g.id, u)).length, top = Math.max(...ideas.map(cnt)); if (top < 1) return null;
+  if (mem.filter(u => ideas.some(g => likedBy(g.id, u))).length < 2) return null; /* un seul votant : pas d'égalité à départager */
   const tied = ideas.filter(g => cnt(g) === top); return tied.length >= 2 ? tied : null;
 }
 function fullRank(v, r) { const c = voteCands(v), o = (r || []).filter(id => c.includes(id)); c.forEach(id => { if (!o.includes(id)) o.push(id); }); return o; }
