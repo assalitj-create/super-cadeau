@@ -1788,7 +1788,7 @@ function showSplash() {
   setTimeout(end, 3200);
 }
 render();
-if (!me) showSplash();
+showSplash();
 if (inviteToast) toast('Synchronisation automatique activée');
 if (syncUrl) syncNow(false);
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
