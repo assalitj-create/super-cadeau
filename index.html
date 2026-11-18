@@ -465,7 +465,7 @@ function daysToXmas() {
 
 const LOGO_W = "<svg aria-hidden='true' viewBox='10 2 80 92'><rect x='22' y='52' width='56' height='36' rx='4' fill='none' stroke='#fff' stroke-width='6'/><rect x='16' y='42' width='68' height='12' rx='3' fill='none' stroke='#fff' stroke-width='6'/><line x1='50' y1='42' x2='50' y2='88' stroke='#fff' stroke-width='6'/><polygon points='62,6 34,50 49,50 39,84 74,36 57,36 67,6' fill='#fff' stroke='#D8392B' stroke-width='5' stroke-linejoin='round' paint-order='stroke'/></svg>";
 const LOGO = "<svg aria-hidden='true' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='#FFF1D6'/><rect x='22' y='52' width='56' height='36' rx='4' fill='none' stroke='#D8392B' stroke-width='5'/><rect x='16' y='42' width='68' height='12' rx='3' fill='none' stroke='#D8392B' stroke-width='5'/><line x1='50' y1='42' x2='50' y2='88' stroke='#D8392B' stroke-width='5'/><polygon points='62,8 36,48 49,48 40,80 72,36 57,36 66,8' fill='#F4C542' stroke='#B72B20' stroke-width='3' stroke-linejoin='round'/></svg>";
-const emptyS = () => ({ people: {}, gifts: {}, budgets: {}, shares: {}, likes: {}, tickets: {}, auth: {}, groups: {}, pgroup: {}, users: {}, votes: {}, ballots: {}, wishes: {}, claims: {} });
+const emptyS = () => ({ people: {}, gifts: {}, budgets: {}, shares: {}, likes: {}, tickets: {}, auth: {}, groups: {}, pgroup: {}, users: {}, votes: {}, ballots: {}, wishes: {}, claims: {}, foyers: {} });
 let S = emptyS(), me = null;
 try {
   const raw = JSON.parse(localStorage.getItem('cadeaux.v1') || 'null');
@@ -489,6 +489,12 @@ const personOk = pid => { const p = S.people[pid]; return !!(p && !p.d && visibl
 const peopleList = () => live('people').filter(visible);
 const isSolo = pid => !!(S.people[pid] && isSoloP(S.people[pid]));
 const isPriv = pid => !!(S.people[pid] && S.people[pid].scope === 'private');
+const foyerList = () => Object.keys(S.foyers || {}).filter(k => !S.foyers[k].d && S.foyers[k].members).map(k => Object.assign({ id: k }, S.foyers[k]));
+const foyerOf = u => foyerList().find(f => f.members.includes(u));
+const sameF = (a, b) => { if (!a || !b || a === b) return false; const f = foyerOf(a); return !!f && f.members.includes(b); };
+const recipInDuo = (u, pid) => { const f = foyerOf(u), p = S.people[pid]; return !!f && !!p && f.members.includes(p.name); };
+const isPartner = (u, mem, pid) => { const f = foyerOf(u); return !!f && f.payer !== u && mem.includes(f.payer) && !recipInDuo(u, pid); };
+const foyerApplies = pid => { const m = membersOf(pid); return m.some(u => isPartner(u, m, pid)); };
 const membersOf = pid => S.people[pid] ? memOf(S.people[pid]) : USERS;
 /* Les cadeaux personnels ne quittent jamais l'appareil : ils sont filtrés de toute sortie (synchro, export, code). */
 function privRec(c, id, rec) {
@@ -507,7 +513,8 @@ function sharedState(withAuth) {
   if (withAuth) { Object.keys(S.votes || {}).forEach(k => { o.likes['vote|' + k] = S.votes[k]; }); Object.keys(S.ballots || {}).forEach(k => { o.likes['ballot|' + k] = S.ballots[k]; }); } // votes d'arbitrage : synchro uniquement
   if (withAuth) Object.keys(S.wishes || {}).forEach(k => { o.likes['wish|' + k] = S.wishes[k]; });
   if (withAuth) Object.keys(S.claims || {}).forEach(k => { o.likes['claim|' + k] = S.claims[k]; });
-  delete o.claims; delete o.wishes; delete o.tickets; delete o.auth; delete o.groups; delete o.pgroup; delete o.users; delete o.votes; delete o.ballots;
+  if (withAuth) Object.keys(S.foyers || {}).forEach(k => { o.likes['foyer|' + k] = S.foyers[k]; });
+  delete o.foyers; delete o.claims; delete o.wishes; delete o.tickets; delete o.auth; delete o.groups; delete o.pgroup; delete o.users; delete o.votes; delete o.ballots;
   return o;
 }
 
@@ -533,7 +540,7 @@ function computeShares() {
     });
     list.filter(g => !g.manual).forEach(g => {
       const P = giftCost(g), cap = u => Math.max(0, rem[u]);
-      const mem = membersOf(pid), a = {}; USERS.forEach(u => { a[u] = 0; });
+      const mem0 = membersOf(pid), mem = g.perHead ? mem0 : mem0.filter(u => !isPartner(u, mem0, pid)), a = {}; USERS.forEach(u => { a[u] = 0; });
       mem.forEach(u => { a[u] = Math.min(P / mem.length, cap(u)); });
       let rest = P - mem.reduce((s, u) => s + a[u], 0);
       mem.forEach(u => { if (rest > 0) { const add = Math.min(rest, cap(u) - a[u]); a[u] += add; rest -= add; } });
@@ -753,8 +760,16 @@ function colorSection() {
   return `<h3 class="psec">Ma couleur</h3><p class="sub" style="margin-top:-4px">Elle colore tes initiales et ton espace, et les autres la voient aussi.</p>
   <div class="swatches">${pal.map(c => { const o = used[c.toLowerCase()]; return `<button type="button" class="sw ${c.toLowerCase() === cur ? 'on' : ''}" style="--c:${c}" data-act="setColor" data-v="${c}" ${o ? 'disabled' : ''} aria-label="${c}${o ? ', utilisée par ' + esc(o) : ''}"><i>${esc(me[0])}</i><small>${o ? esc(o) : c.toLowerCase() === cur ? 'Ma couleur' : ''}</small></button>`; }).join('')}</div>`;
 }
+function foyerSection() {
+  const f = foyerOf(me), other = f && f.members.find(x => x !== me);
+  const head = '<h3 class="psec">Mon duo</h3>';
+  if (f) return head + `<p class="sub" style="margin-top:-4px">${f.payer === me ? `Tu paies avec ${esc(other)} : quand vous offrez un cadeau ensemble, ta part inclut la sienne, en précisant que c’est un duo avec ${esc(other)}.` : `${esc(other)} paie avec toi : quand vous offrez un cadeau ensemble, ta part est incluse dans la sienne.`}</p><button type="button" class="link" data-act="foyerEnd" data-id="${f.id}">Dissocier</button>`;
+  const free = others(me).filter(u => !foyerOf(u));
+  if (!free.length) return '';
+  return head + `<p class="sub" style="margin-top:-4px">Tu paies avec quelqu’un ? Sur un cadeau à plusieurs, vous ne comptez que pour une part, portée par toi, et les autres voient que c’est un duo.</p><div class="row" style="gap:8px"><select id="duoSel" style="flex:1"><option value="">Choisir quelqu’un</option>${free.map(u => `<option>${esc(u)}</option>`).join('')}</select><button type="button" class="btn sec" data-act="duoSet">Valider</button></div>`;
+}
 function profileForm() {
-  return `<h2>Mon profil</h2>${colorSection()}
+  return `<h2>Mon profil</h2>${colorSection()}${foyerSection()}
   <form data-form="pwchange"><h3 class="psec">Mon mot de passe</h3>
   <label>Mot de passe actuel<input name="cur" type="password" autocomplete="current-password" required></label>
   <label>Nouveau mot de passe<input name="pw" type="password" autocomplete="new-password" minlength="4" required></label>
@@ -1068,7 +1083,7 @@ function payView() {
   const due = {}, paid = {}, debt = {}; USERS.forEach(u => { due[u] = 0; paid[u] = 0; debt[u] = {}; });
   gs.forEach(g => USERS.forEach(u => {
     const a = (SH[g.id] || {})[u] || 0, s = shareOf(g.id, u); due[u] += a;
-    if (g.buyer === u || (s && s.paid)) paid[u] += a; else if (g.buyer && g.buyer !== u) debt[u][g.buyer] = (debt[u][g.buyer] || 0) + a;
+    if (g.buyer === u || (s && s.paid) || (sameF(g.buyer, u) && !recipInDuo(u, g.pid))) paid[u] += a; else if (g.buyer && g.buyer !== u) debt[u][g.buyer] = (debt[u][g.buyer] || 0) + a;
   }));
   const bal = [];
   USERS.forEach((u, i) => USERS.slice(i + 1).forEach(v => { const n = (debt[u][v] || 0) - (debt[v][u] || 0); if (Math.abs(n) > 0.005) bal.push(n > 0 ? [u, v, n] : [v, u, -n]); }));
@@ -1086,9 +1101,9 @@ function payView() {
         <label style="margin:12px 0 6px">Qui avance l’achat ?<select data-buyer="${g.id}"><option value="">Pas encore décidé</option>${membersOf(pid).map(u => `<option ${g.buyer === u ? 'selected' : ''}>${u}</option>`).join('')}</select></label>
         ${membersOf(pid).map(u => {
           const s = shareOf(g.id, u), b = budgetOf(g.pid, u);
-          return `<div class="share-row"><div><b>${u}${u === me ? ' (moi)' : ''}</b><div class="sub">budget ${b == null ? 'non défini' : eur(b)}</div></div>
+          return `<div class="share-row"><div><b>${u}${u === me ? ' (moi)' : ''}</b><div class="sub">budget ${b == null ? 'non défini' : eur(b)}${!g.perHead && !recipInDuo(u, pid) && foyerOf(u) && sameF(u, foyerOf(u).members.find(x => x !== u)) && membersOf(pid).includes(foyerOf(u).members.find(x => x !== u)) ? (isPartner(u, membersOf(pid), pid) ? ', inclus dans la part de ' + esc(foyerOf(u).payer) : ', paie aussi pour ' + esc(foyerOf(u).members.find(x => x !== u))) : ''}</div></div>
             ${g.manual ? `<input type="number" min="0" step="0.01" inputmode="decimal" value="${sh[u] || 0}" data-share="${g.id}|${u}">` : `<span class="amt">${eur(sh[u] || 0)}</span>`}
-            <label>${g.buyer === u ? '<span class="badge ok">avancé</span>' : `<input type="checkbox" data-paid="${g.id}|${u}" ${s && s.paid ? 'checked' : ''}> payé`}</label></div>`;
+            <label>${g.buyer === u ? '<span class="badge ok">avancé</span>' : (sameF(g.buyer, u) && !recipInDuo(u, pid)) ? '<span class="badge ok">avec ' + esc(g.buyer) + '</span>' : `<input type="checkbox" data-paid="${g.id}|${u}" ${s && s.paid ? 'checked' : ''}> payé`}</label></div>`;
         }).join('')}
         <div class="actions">${g.manual ? `<button class="btn sec sm" data-act="manualOff" data-id="${g.id}">Revenir au calcul automatique</button>` : `<button class="link" data-act="manualOn" data-id="${g.id}">Ajuster à la main</button>`}</div></div>`;
     });
@@ -1252,6 +1267,7 @@ function giftForm(g, pid) {
   <label>Photo (depuis ton téléphone)<input name="file" type="file" accept="image/*"></label>
   <label>Ou l’adresse d’une image (remplie automatiquement depuis le lien)<input name="imgurl" type="url" placeholder="https://…/image.jpg" value="${esc(g.img && !/^data:/.test(g.img) ? g.img : '')}"></label>
   <div class="pv" id="pv">${g.img ? `<img src="${esc(g.img)}" alt="" referrerpolicy="no-referrer">` : ''}</div><button type="button" class="link" data-act="giftNoImg">Retirer l’image</button>
+  ${foyerApplies(sel) ? `<label class="opt"><input type="checkbox" name="perHead" ${g.perHead ? 'checked' : ''}><span><b>Chacun sa part</b><small>Par défaut, quand deux personnes paient ensemble, une seule part est comptée. Coche pour compter chacun.</small></span></label>` : ''}
   <label>Note<textarea name="note" rows="2" maxlength="300" placeholder="Taille, couleur, magasin…">${esc(g.note || '')}</textarea></label>
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Annuler</button><button class="btn">Enregistrer</button></div></form>`;
 }
@@ -1294,7 +1310,7 @@ function parseIncoming(txt) {
 function merge(inc, allowAuth) {
   let n = 0;
   const take = (c, k, rec) => { const cur = S[c][k]; if (rec && typeof rec === 'object' && (!cur || (rec.u || 0) > (cur.u || 0))) { S[c][k] = rec; n++; } };
-  COLL.forEach(c => { const m = inc[c] || {}; Object.keys(m).forEach(k => { if (c === 'likes' && k.indexOf('ticket|') === 0) take('tickets', k.slice(7), m[k]); else if (c === 'likes' && k.indexOf('auth|') === 0) { if (allowAuth) take('auth', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('user|') === 0) { if (allowAuth) take('users', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('pgroup|') === 0) { if (allowAuth) take('pgroup', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('group|') === 0) { if (allowAuth) take('groups', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('claim|') === 0) { if (allowAuth) take('claims', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('wish|') === 0) { if (allowAuth) take('wishes', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('ballot|') === 0) { if (allowAuth) take('ballots', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('vote|') === 0) { if (allowAuth) take('votes', k.slice(5), m[k]); } else take(c, k, m[k]); }); });
+  COLL.forEach(c => { const m = inc[c] || {}; Object.keys(m).forEach(k => { if (c === 'likes' && k.indexOf('ticket|') === 0) take('tickets', k.slice(7), m[k]); else if (c === 'likes' && k.indexOf('auth|') === 0) { if (allowAuth) take('auth', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('user|') === 0) { if (allowAuth) take('users', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('pgroup|') === 0) { if (allowAuth) take('pgroup', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('group|') === 0) { if (allowAuth) take('groups', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('foyer|') === 0) { if (allowAuth) take('foyers', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('claim|') === 0) { if (allowAuth) take('claims', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('wish|') === 0) { if (allowAuth) take('wishes', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('ballot|') === 0) { if (allowAuth) take('ballots', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('vote|') === 0) { if (allowAuth) take('votes', k.slice(5), m[k]); } else take(c, k, m[k]); }); });
   Object.keys(inc.tickets || {}).forEach(k => take('tickets', k, inc.tickets[k]));
   if (n) rebuildUsers();
   persist(); return n;
@@ -1391,6 +1407,8 @@ const actions = {
   wishUser(t) { wishUser = t.dataset.v; render(); },
   giftNoImg() { const f = $('#sheet form[data-form="gift"]'); if (f) { f.elements.img.value = ''; f.elements.imgurl.value = ''; f.elements.file.value = ''; showPv(); } },
   wishNoImg() { const f = $('#sheet form[data-form="wish"]'); if (f) { f.elements.img.value = ''; f.elements.file.value = ''; wishPv(); } },
+  duoSet() { const v = $('#duoSel') && $('#duoSel').value; if (!v) { toast('Choisis d’abord une personne'); return; } if (foyerOf(me) || foyerOf(v)) return; put('foyers', uid(), { members: [me, v], payer: me, c: Date.now() }); render(); openModal(profileForm()); toast('Duo enregistré avec ' + v); },
+  foyerEnd(t) { del('foyers', t.dataset.id); render(); openModal(profileForm()); toast('Duo dissocié'); },
   claimWish(t) {
     const id = t.dataset.id, w = S.wishes[id], c = S.claims[id]; if (!w || w.owner === me) return;
     if (c && !c.d && c.by !== me) { toast('Quelqu’un l’a déjà pris'); render(); return; }
@@ -1484,7 +1502,7 @@ document.addEventListener('submit', e => {
   } else {
     const p = E.price.value, old = S.gifts[id] || {};
     const st = E.status.value, log = (old.log || []).slice(); if (old.status !== st) log.push({ s: st, by: me, at: Date.now() });
-    const rec = { pid: E.pid.value, t: E.t.value.trim(), price: p === '' ? null : parseFloat(p), status: st, log, url: E.url.value.trim(), img: E.img.value.trim(), note: E.note.value.trim(), by: old.by || me, c: old.c || Date.now() };
+    const rec = { pid: E.pid.value, t: E.t.value.trim(), price: p === '' ? null : parseFloat(p), status: st, log, url: E.url.value.trim(), img: E.img.value.trim(), note: E.note.value.trim(), by: old.by || me, c: old.c || Date.now(), perHead: !!(E.perHead && E.perHead.checked) };
     if (sidx(st) >= 2) { rec.buyer = old.buyer || me; rec.bdate = old.bdate || today(); }
     put('gifts', id, rec);
     closeModal(); render(); toast(isNew ? 'Idée ajoutée' : 'Cadeau modifié');
