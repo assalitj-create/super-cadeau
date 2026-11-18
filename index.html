@@ -758,7 +758,9 @@ async function fetchPreview(url) {
   let img = await firstGoodImage([d && d.image && d.image.url].concat(pg ? pg.imgs : []));
   if (!img && asin) img = await firstGoodImage([`https://m.media-amazon.com/images/P/${asin}.01._SCLZZZZZZZ_.jpg`, `https://images-na.ssl-images-amazon.com/images/P/${asin}.01.LZZZZZZZ.jpg`]);
   let title = (d && d.title) || (pg && pg.title) || '';
+  title = title.replace(/^amazon\.[a-z.]+\s*:\s*/i, '').replace(/\s*[:|–-]\s*amazon\.[a-z.]+\s*$/i, '').trim();
   if (!title || /^(amazon|robot check|captcha|just a moment|access denied|attention required)/i.test(title) || /^amazon\.[a-z.]+\s*:?\s*$/i.test(title)) title = slugTitle(url);
+  if (!title && asin) title = 'Produit Amazon ' + asin;
   return (img || title || (pg && pg.price)) ? { img, title, price: (pg && pg.price) || '', cur: (pg && pg.cur) || '' } : null;
 }
 
