@@ -925,7 +925,7 @@ function groupOf(pid) {
   const r = S.pgroup[me + '|' + pid]; if (!r || !r.gid) return '';
   const g = S.groups[r.gid]; return g && !g.d && g.owner === me ? r.gid : '';
 }
-let fGroup = 'all';
+let fGroup = 'all', fWith = 'all';
 const spentTotal = pid => chosenOf(pid).filter(g => sidx(g.status) >= 2).reduce((t, g) => t + giftCost(g), 0);
 function segBar(pid) {
   const bt = budgetTotal(pid), ch = chosenTotal(pid), sp = spentTotal(pid), den = Math.max(bt, ch) || 1;
@@ -1174,11 +1174,15 @@ function ideasView() {
 
 /* ---- Budgets ---- */
 function budgetsView() {
-  const people = peopleList().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
-  if (!people.length) return `<h2>Budgets</h2><div class="empty">${IC.euro}<div>Ajoute d’abord une personne.</div></div>`;
+  const all = peopleList().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  const withs = [...new Set(all.filter(p => p.scope !== 'private' && p.scope !== 'mine').flatMap(p => memOf(p).filter(u => u !== me)))].sort((a, b) => a.localeCompare(b, 'fr'));
+  if (fWith !== 'all' && !withs.includes(fWith)) fWith = 'all';
+  const people = fWith === 'all' ? all : all.filter(p => memOf(p).includes(fWith) && p.scope !== 'private' && p.scope !== 'mine');
+  if (!all.length) return `<h2>Budgets</h2><div class="empty">${IC.euro}<div>Ajoute d’abord une personne.</div></div>`;
   const totMe = people.reduce((s, p) => s + (budgetOf(p.id, me) || 0), 0), totO = people.reduce((s, p) => s + others(me).reduce((t, o) => t + (membersOf(p.id).includes(o) ? (budgetOf(p.id, o) || 0) : 0), 0), 0);
   return `<h2>Budgets</h2>
   <p class="note">Indique ce que <b>tu</b> peux mettre pour chacun. Les budgets des autres apparaissent après synchronisation. La part de chacun sur les cadeaux se calcule ensuite toute seule.</p>
+  ${withs.length ? `<div class="fchips"><button class="${fWith === 'all' ? 'on' : ''}" data-act="wfilter" data-v="all">Tous</button>${withs.map(u => `<button class="${fWith === u ? 'on' : ''}" data-act="wfilter" data-v="${esc(u)}">Avec ${esc(u)}</button>`).join('')}</div>` : ''}
   <div class="card paper"><table class="table"><thead><tr><th>Pour</th><th>Moi</th><th>Autres</th><th>Total</th><th>Retenu</th></tr></thead><tbody>
   ${people.map(p => {
     const bt = budgetTotal(p.id), ch = chosenTotal(p.id);
@@ -1479,6 +1483,7 @@ const actions = {
   setColor(t) { setUserColor(me, t.dataset.v); put('prefs', me, { colorDone: true }); render(); openModal(profileForm()); toast('Couleur modifiée'); },
   makeMine(t) { const id = t.dataset.id; put('people', id, { scope: 'mine' }); closeModal(); render(); toast('Visible par toi seul, sur tous tes appareils'); },
   groupsForm() { openModal(groupsForm()); },
+  wfilter(t) { fWith = t.dataset.v; render(); },
   gfilter(t) { fGroup = t.dataset.v; render(); },
   delGroup(t) { const id = t.dataset.id, g = S.groups[id]; confirmDlg(`Supprimer le groupe « ${g.name} » ? Les personnes ne sont pas supprimées, elles passent « Sans groupe ».`, () => { del('groups', id); closeModal(); render(); }, 'Supprimer'); },
   nav(t) { view = t.dataset.v; cur = null; render(); window.scrollTo(0, 0); },
