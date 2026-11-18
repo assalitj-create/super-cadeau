@@ -1134,9 +1134,9 @@ function wishesView() {
 }
 function wishClaimUi(w) {
   const c = S.claims && S.claims[w.id], by = c && !c.d ? c.by : null;
-  const hint = `<div class="sub" style="width:100%;margin-top:6px">${esc(w.owner)} ne voit jamais qui prend quoi.</div>`;
+  const hint = `<div class="sub" style="width:100%;margin-top:6px">${esc(w.owner)} ne saura jamais ce qui est pris.</div>`;
   if (by === me) return `<span class="badge ok">Pris par toi</span><span style="margin-left:auto"><button class="link" data-act="offerWish" data-id="${w.id}">Offrir ça</button><button class="link" data-act="unclaimWish" data-id="${w.id}">Annuler</button></span>${hint}`;
-  if (by) return `<span class="badge bad">Déjà pris par ${esc(by)}</span>${hint}`;
+  if (by) return `<span class="badge bad">Déjà pris</span>${hint}`;
   return `<span style="margin-left:auto"><button class="link" data-act="offerWish" data-id="${w.id}">Offrir ça</button><button class="btn sm" data-act="claimWish" data-id="${w.id}">Je le prends</button></span>${hint}`;
 }
 function wishForm(w) {
@@ -1393,7 +1393,7 @@ const actions = {
   wishNoImg() { const f = $('#sheet form[data-form="wish"]'); if (f) { f.elements.img.value = ''; f.elements.file.value = ''; wishPv(); } },
   claimWish(t) {
     const id = t.dataset.id, w = S.wishes[id], c = S.claims[id]; if (!w || w.owner === me) return;
-    if (c && !c.d && c.by !== me) { toast(`${c.by} l’a déjà pris`); render(); return; }
+    if (c && !c.d && c.by !== me) { toast('Quelqu’un l’a déjà pris'); render(); return; }
     put('claims', id, { by: me }); render(); toast('Noté, ' + w.owner + ' ne le saura pas');
   },
   unclaimWish(t) { const id = t.dataset.id, c = S.claims[id]; if (c && c.by === me) { del('claims', id); render(); } },
