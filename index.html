@@ -1075,6 +1075,13 @@ function budgetsView() {
 }
 
 /* ---- Paiements : parts calculées automatiquement ---- */
+function duoTag(u, pid, g) {
+  if (g.perHead || recipInDuo(u, pid)) return '';
+  const f = foyerOf(u), m = membersOf(pid); if (!f) return '';
+  const o = f.members.find(x => x !== u); if (!o || !m.includes(o)) return '';
+  const pair = esc(f.payer) + ' et ' + esc(f.members.find(x => x !== f.payer));
+  return ` <span class="badge ok" style="font-weight:700">Duo ${pair}</span>` + (isPartner(u, m, pid) ? `<div class="sub">Inclus dans la part de ${esc(f.payer)}</div>` : `<div class="sub">Une seule part pour le duo</div>`);
+}
 function payView() {
   const gs = live('gifts').filter(g => personOk(g.pid) && !isSolo(g.pid) && g.status !== 'idee');
   let h = `<h2>Qui paye quoi</h2>`;
@@ -1101,7 +1108,7 @@ function payView() {
         <label style="margin:12px 0 6px">Qui avance l’achat ?<select data-buyer="${g.id}"><option value="">Pas encore décidé</option>${membersOf(pid).map(u => `<option ${g.buyer === u ? 'selected' : ''}>${u}</option>`).join('')}</select></label>
         ${membersOf(pid).map(u => {
           const s = shareOf(g.id, u), b = budgetOf(g.pid, u);
-          return `<div class="share-row"><div><b>${u}${u === me ? ' (moi)' : ''}</b><div class="sub">budget ${b == null ? 'non défini' : eur(b)}${!g.perHead && !recipInDuo(u, pid) && foyerOf(u) && sameF(u, foyerOf(u).members.find(x => x !== u)) && membersOf(pid).includes(foyerOf(u).members.find(x => x !== u)) ? (isPartner(u, membersOf(pid), pid) ? ', inclus dans la part de ' + esc(foyerOf(u).payer) : ', paie aussi pour ' + esc(foyerOf(u).members.find(x => x !== u))) : ''}</div></div>
+          return `<div class="share-row"><div><b>${u}${u === me ? ' (moi)' : ''}</b>${duoTag(u, pid, g)}<div class="sub">budget ${b == null ? 'non défini' : eur(b)}${!g.perHead && !recipInDuo(u, pid) && foyerOf(u) && sameF(u, foyerOf(u).members.find(x => x !== u)) && membersOf(pid).includes(foyerOf(u).members.find(x => x !== u)) ? '' : ''}</div></div>
             ${g.manual ? `<input type="number" min="0" step="0.01" inputmode="decimal" value="${sh[u] || 0}" data-share="${g.id}|${u}">` : `<span class="amt">${eur(sh[u] || 0)}</span>`}
             <label>${g.buyer === u ? '<span class="badge ok">avancé</span>' : (sameF(g.buyer, u) && !recipInDuo(u, pid)) ? '<span class="badge ok">avec ' + esc(g.buyer) + '</span>' : `<input type="checkbox" data-paid="${g.id}|${u}" ${s && s.paid ? 'checked' : ''}> payé`}</label></div>`;
         }).join('')}
