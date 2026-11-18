@@ -581,6 +581,10 @@ function boxSvg(name) {
 }
 const TREE = `<svg class="tree" viewBox="0 0 150 120" aria-hidden="true"><polygon points="75,14 104,52 46,52" fill="#1E6B4A"/><polygon points="75,34 114,80 36,80" fill="#2A7F58"/><polygon points="75,58 124,108 26,108" fill="#1E6B4A"/><rect x="68" y="106" width="14" height="14" fill="#7A4A2A"/><polygon points="75,2 78,10 87,10 80,15 83,24 75,18 67,24 70,15 63,10 72,10" fill="#F4C542"/><circle cx="62" cy="70" r="4" fill="#F4C542"/><circle cx="88" cy="92" r="4" fill="#fff"/><circle cx="58" cy="96" r="4" fill="#F4C542"/><rect x="104" y="96" width="30" height="24" fill="#F4C542"/><rect x="116" y="96" width="6" height="24" fill="#D8392B"/></svg>`;
 const EMPTY_IDEAS = ['Ici, c’est plus vide que le sapin le 26 décembre.', 'Même le Père Noël n’a pas encore d’idée. Lance-toi !', 'Zéro idée. Les lutins sont en grève, c’est à toi de jouer.', 'Rien pour l’instant. Une chaussette de Noël, ça compte ?', 'Page blanche, comme la neige. Propose la première idée !'];
+const WISH_OTHER = ['{n} n’a encore rien demandé. Soit {n} est comblé(e), soit {n} fait le mystérieux.', '{n} n’a rien noté. Le Père Noël va devoir deviner.', 'Liste de {n} : vide. Pour l’instant, la boîte à idées est en vacances.', '{n} n’a encore rien ajouté. Ça sent la surprise à l’aveugle.', 'Rien ici. {n} attend sûrement que les lutins s’en occupent.', '{n} n’a pas encore écrit au Père Noël. Un coup de pouce ?', 'Page blanche pour {n}. Le suspense est insoutenable.', '{n} n’a rien demandé. Quelqu’un risque de recevoir des chaussettes.'];
+const WISH_MINE = ['Ta liste est vide. Le Père Noël n’est pas devin, ajoute ce qui te ferait plaisir.', 'Rien dans ta liste : tu risques de recevoir des chaussettes.', 'Ta liste est plus vide que le sapin le 26 décembre.', 'Les lutins attendent tes envies. Allez, lance-toi !', 'Aucune envie ? Même un petit rien, ça aide les autres.', 'Ta liste fait le mort. Réveille-la avec une idée.'];
+let wishRoll = Math.floor(Math.random() * 1000);
+const wishEmpty = (mine, who) => { const a = mine ? WISH_MINE : WISH_OTHER; return a[wishRoll % a.length].replace(/\{n\}/g, who); };
 const EMPTY_SEED = Math.floor(Math.random() * 1000);
 function emptyIdea() { return EMPTY_IDEAS[(EMPTY_SEED + (cur ? String(cur).length + String(cur).charCodeAt(0) : 0)) % EMPTY_IDEAS.length]; }
 function daysToXmas() {
@@ -1423,7 +1427,7 @@ function wishesView() {
     ${w.price != null && w.price !== '' ? `<div class="sub" style="font-weight:700">${eur(+w.price)}</div>` : ''}
     ${w.note ? `<div class="tkdesc">${esc(w.note)}</div>` : ''}
     <div class="gact">${w.url ? `<a class="link" href="${esc(w.url)}" target="_blank" rel="noopener">Voir le produit</a>` : ''}${!mineL ? wishClaimUi(w) : ''}${mineL ? `<span style="margin-left:auto"><button class="link" data-act="editWish" data-id="${w.id}">Modifier</button><button class="link" data-act="delWish" data-id="${w.id}">Supprimer</button></span>` : ''}</div></div>`).join('')
-  : `<div class="empty">${IC.gift}<div>${mineL ? 'Ta liste est vide. Ajoute ce qui te ferait plaisir.' : `${esc(who)} n’a encore rien ajouté.`}</div></div>`}`;
+  : `<div class="empty">${IC.gift}<div>${esc(wishEmpty(mineL, who))}</div></div>`}`;
 }
 function wishClaimUi(w) {
   const c = S.claims && S.claims[w.id], by = c && !c.d ? c.by : null;
@@ -1728,7 +1732,7 @@ const actions = {
   async copyInvite(t) { if (t && t.dataset.name) { toast(await copyText(inviteText(t.dataset.name)) ? 'Message copié, colle-le dans ta messagerie' : 'Copie impossible'); } else { toast(await copyText(location.origin + location.pathname + '#sync=' + encodeURIComponent(syncUrl)) ? 'Lien copié, envoie-le à l’autre' : 'Copie impossible'); } },
   async shareInvite(t) { try { await navigator.share({ title: 'Super Cadeau', text: inviteText(t.dataset.name) }); } catch (e) {} },
   addUser() { openModal(userForm()); },
-  wishUser(t) { wishUser = t.dataset.v; render(); },
+  wishUser(t) { wishUser = t.dataset.v; wishRoll = Math.floor(Math.random() * 1000); render(); },
   giftNoImg() { const f = $('#sheet form[data-form="gift"]'); if (f) { f.elements.img.value = ''; f.elements.imgurl.value = ''; f.elements.file.value = ''; showPv(); } },
   wishNoImg() { const f = $('#sheet form[data-form="wish"]'); if (f) { f.elements.img.value = ''; f.elements.file.value = ''; wishPv(); } },
   duoForm() { openModal(duoForm()); },
