@@ -502,6 +502,10 @@ header.gate .dot{display:none}
 .gflab{display:flex;align-items:center;gap:6px;font:700 13px var(--sans);color:var(--ink-m)}
 .gflab svg{width:15px;height:15px}
 .gfhead .link{font-size:13px}
+
+.bub.manage span{white-space:normal;overflow:visible}
+.bub.manage{width:86px}
+.bub.manage span{max-width:86px}
 </style>
 </head>
 <body>
@@ -1078,7 +1082,8 @@ function homeView() {
     groups.forEach((g, i) => { const c = PAL[i % PAL.length]; rail += bub('gfilter', g.id, users, g.name, `background:${c[0]};color:${c[1]}`, fGroup === g.id, nIn(p => groupOf(p.id) === g.id)); });
     if (people.some(p => !groupOf(p.id))) rail += bub('gfilter', 'none', ask, 'Sans groupe', 'background:#E6ECF4;color:#4A5B73', fGroup === 'none', nIn(p => !groupOf(p.id)));
   }
-  h += `<div class="qa"><button class="qb" data-act="nav" data-v="wishes"><i>${IC.gift}</i><span>Listes de souhaits</span></button><button class="qb red" data-act="addPerson"><i>${plus}</i><span>Ajouter une personne</span></button></div><h3 style="margin:20px 0 2px">À qui offrir ?</h3>${people.length ? `<div class="row between gfhead"><span class="gflab">${svg('<path d="M4 5h16l-6 7v6l-4 2v-8z"/>')}${groups.length ? 'Filtrer par groupe' : 'Trier par groupe'}</span><button class="link" data-act="groupsForm">${groups.length ? 'Gérer mes groupes' : 'Créer des groupes'}</button></div>` : ''}${rail ? `<div class="rail">${rail}</div>` : ''}`;
+  if (people.length) rail += bub('groupsForm', null, groups.length ? pen : plus, groups.length ? 'Gérer mes groupes' : 'Créer des groupes', 'background:#fff;border:2px dashed #9AA9BD;color:#4A5B73', false).replace('class="bub ', 'class="bub manage ');
+  h += `<div class="qa"><button class="qb" data-act="nav" data-v="wishes"><i>${IC.gift}</i><span>Listes de souhaits</span></button><button class="qb red" data-act="addPerson"><i>${plus}</i><span>Ajouter une personne</span></button></div><h3 style="margin:20px 0 2px">À qui offrir ?</h3>${people.length ? `<div class="row between gfhead"><span class="gflab">${svg('<path d="M4 5h16l-6 7v6l-4 2v-8z"/>')}${groups.length ? 'Filtrer par groupe' : 'Trier par groupe'}</span></div>` : ''}${rail ? `<div class="rail">${rail}</div>` : ''}`;
   if (!people.length) return h + `<div class="empty">${IC.gift}<div>Ajoute la première personne à qui vous voulez faire un cadeau.</div></div>`;
   if (!groups.length || fGroup === 'all') {
     const order = groups.map(g => people.filter(p => groupOf(p.id) === g.id)).flat().concat(groups.length ? people.filter(p => !groupOf(p.id)) : people);
