@@ -931,6 +931,12 @@ function segBar(pid) {
   const bt = budgetTotal(pid), ch = chosenTotal(pid), sp = spentTotal(pid), den = Math.max(bt, ch) || 1;
   return `<div class="bar ${bt && ch > bt ? 'over' : ''}"><i class="sp" style="width:${sp / den * 100}%"></i><i class="kp" style="width:${(ch - sp) / den * 100}%"></i></div>`;
 }
+function withText(p) {
+  if (p.scope === 'private' || p.scope === 'mine') return '';
+  const mem = memOf(p), os = mem.filter(u => u !== me); if (!os.length) return '';
+  const names = os.map(u => { const f = foyerOf(u), duo = f && f.members.some(x => x !== u && mem.includes(x)) && !recipInDuo(u, p.id); return esc(u) + (duo ? ' <span class="duotag">(<span class="hrt">♥</span> duo)</span>' : ''); });
+  return 'avec ' + (names.length > 1 ? names.slice(0, -1).join(', ') + ' et ' + names[names.length - 1] : names[0]);
+}
 function shareAvs(p) {
   if (p.scope === 'private') return `<span class="lk">${IC.lock}Cet appareil</span>`;
   if (p.scope === 'mine') return `<span class="lk">${IC.devices}Mes appareils</span>`;
@@ -1176,7 +1182,7 @@ function budgetsView() {
   <div class="card paper"><table class="table"><thead><tr><th>Pour</th><th>Moi</th><th>Autres</th><th>Total</th><th>Retenu</th></tr></thead><tbody>
   ${people.map(p => {
     const bt = budgetTotal(p.id), ch = chosenTotal(p.id);
-    return `<tr><td><b>${esc(p.name)}</b>${p.scope === 'private' ? ` <span class="badge lock">${IC.lock}</span>` : p.scope === 'mine' ? ` <span class="badge lock">${IC.devices}</span>` : ''}</td>
+    return `<tr><td><b>${esc(p.name)}</b>${withText(p) ? `<div class="sub">${withText(p)}</div>` : ''}${p.scope === 'private' ? ` <span class="badge lock">${IC.lock}</span>` : p.scope === 'mine' ? ` <span class="badge lock">${IC.devices}</span>` : ''}</td>
       <td><input class="num" type="number" min="0" step="1" inputmode="decimal" placeholder="€" value="${budgetOf(p.id, me) == null ? '' : budgetOf(p.id, me)}" data-bud="${p.id}"></td>
       <td>${isSoloP(p) || !membersOf(p.id).some(o => o !== me && budgetOf(p.id, o) != null) ? '<span class="sub">—</span>' : eur(membersOf(p.id).filter(o => o !== me).reduce((t, o) => t + (budgetOf(p.id, o) || 0), 0))}</td>
       <td><b>${bt ? eur(bt) : '—'}</b></td>
