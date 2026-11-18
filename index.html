@@ -421,16 +421,13 @@ h2+.psec{margin-top:6px}
 .gdimg{background:#EDF3FA;border-radius:16px;margin:0 0 14px;text-align:center;overflow:hidden}.gdimg img{max-width:100%;max-height:260px;object-fit:contain;display:block;margin:0 auto}
 .pfor{position:absolute;right:10px;top:10px;max-width:60%;padding:4px 12px;border-radius:99px;font-size:13px;font-weight:800;background:#14243B;color:#fff;box-shadow:0 1px 5px rgba(0,0,0,.25);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* connexion : lignes plus grandes, flèche, pastilles plus présentes */
-.gwrap .qui{font-size:26px;margin:26px 0 4px}
-.gwrap .qui+.who{margin-top:16px}
-.who button:not(.sel){position:relative}
-.who button{padding:14px 16px;max-height:92px;gap:16px;font-size:20px;border-radius:22px;box-shadow:0 2px 0 rgba(20,36,59,.05)}
-.who button i{width:52px;height:52px;font-size:22px;box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 16%,transparent)}
-.who button:not(.sel)::after{content:"";margin-left:auto;width:10px;height:10px;border-right:3px solid #9AA9BD;border-top:3px solid #9AA9BD;transform:rotate(45deg);flex:none}
-.who button:active{transform:scale(.98)}
-.who .pick{padding:14px 16px;gap:16px;font-size:20px;border-radius:22px}
-.who .pick i{width:52px;height:52px;font-size:22px}
+/* connexion : mêmes cartes que le reste de l'appli */
+.who button{padding:11px 14px 11px 12px;gap:12px;font-size:19px;border-radius:16px;border:1px solid var(--line);max-height:80px}
+.who button i,.who .pick i{width:48px;height:48px;font-size:20px;background:color-mix(in srgb,var(--c) 15%,#fff);color:var(--c)}
+.who .nm{display:block;font:800 19px/1.2 var(--sans);letter-spacing:-.02em;color:var(--ink)}
+.who .nm small{display:block;font:400 13px var(--sans);letter-spacing:0;color:var(--ink-m);margin-top:2px}
+.who button:active{transform:scale(.985)}
+.who .pick{padding:11px 14px 11px 12px;gap:12px;border-radius:16px}
 </style>
 </head>
 <body>
@@ -821,7 +818,7 @@ function enter(U, h) {
 }
 function gateView() {
   const U = pending, mode = gateMode(); shownMode = mode;
-  const row = `<div class="who"><div class="pick ${UCLS[U] || ''}" style="--c:${colorOf(U)}"><i>${esc(U[0].toUpperCase())}</i>${esc(U)}</div></div>`;
+  const row = `<div class="who"><div class="pick ${UCLS[U] || ''}" style="--c:${colorOf(U)}"><i>${esc(U[0].toUpperCase())}</i><span class="nm">${esc(U)}</span></div></div>`;
   const back = `<div style="text-align:center;margin-top:16px"><button class="link" data-act="notme">Ce n’est pas ${esc(U)}</button></div>`;
   const top = `<h2 class="qui">Qui es-tu ?</h2>` + row;
   let body;
@@ -927,7 +924,7 @@ function render() {
     hdr.innerHTML = `<div class="hero"><div class="glogo">${LOGO}</div><div class="gt">Super Cadeau</div><div class="gs">Même le Père Noël est jaloux</div><i class="dot" style="left:18px;bottom:14px;width:10px;height:10px;background:#F4C542"></i><i class="dot" style="left:44px;bottom:34px;width:7px;height:7px;background:#fff"></i><i class="dot" style="right:22px;bottom:20px;width:10px;height:10px;background:#fff"></i><i class="dot" style="right:52px;bottom:40px;width:7px;height:7px;background:#F4C542"></i></div>`;
     nav.style.display = 'none';
     if (pending) { app.innerHTML = gateView(); return; }
-    app.innerHTML = `<div class="gwrap"><h2 class="qui">Qui es-tu ?</h2><div class="who">${USERS.map(u => `<button class="${UCLS[u] || ''}" style="--c:${colorOf(u)}" data-act="who" data-v="${u}"><i>${esc(u[0].toUpperCase())}</i>${esc(u)}</button>`).join('')}</div></div>`;
+    app.innerHTML = `<div class="gwrap"><h2 class="qui">Qui es-tu ?</h2><div class="who">${USERS.map(u => `<button class="${UCLS[u] || ''}" style="--c:${colorOf(u)}" data-act="who" data-v="${u}"><i>${esc(u[0].toUpperCase())}</i><span class="nm">${esc(u)}<small>Ouvrir mon espace</small></span></button>`).join('')}</div></div>`;
     return;
   }
   nav.style.display = 'flex';
