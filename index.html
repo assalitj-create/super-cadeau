@@ -465,7 +465,7 @@ function daysToXmas() {
 
 const LOGO_W = "<svg aria-hidden='true' viewBox='10 2 80 92'><rect x='22' y='52' width='56' height='36' rx='4' fill='none' stroke='#fff' stroke-width='6'/><rect x='16' y='42' width='68' height='12' rx='3' fill='none' stroke='#fff' stroke-width='6'/><line x1='50' y1='42' x2='50' y2='88' stroke='#fff' stroke-width='6'/><polygon points='62,6 34,50 49,50 39,84 74,36 57,36 67,6' fill='#fff' stroke='#D8392B' stroke-width='5' stroke-linejoin='round' paint-order='stroke'/></svg>";
 const LOGO = "<svg aria-hidden='true' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='#FFF1D6'/><rect x='22' y='52' width='56' height='36' rx='4' fill='none' stroke='#D8392B' stroke-width='5'/><rect x='16' y='42' width='68' height='12' rx='3' fill='none' stroke='#D8392B' stroke-width='5'/><line x1='50' y1='42' x2='50' y2='88' stroke='#D8392B' stroke-width='5'/><polygon points='62,8 36,48 49,48 40,80 72,36 57,36 66,8' fill='#F4C542' stroke='#B72B20' stroke-width='3' stroke-linejoin='round'/></svg>";
-const emptyS = () => ({ people: {}, gifts: {}, budgets: {}, shares: {}, likes: {}, tickets: {}, auth: {}, groups: {}, pgroup: {}, users: {}, votes: {}, ballots: {}, wishes: {} });
+const emptyS = () => ({ people: {}, gifts: {}, budgets: {}, shares: {}, likes: {}, tickets: {}, auth: {}, groups: {}, pgroup: {}, users: {}, votes: {}, ballots: {}, wishes: {}, claims: {} });
 let S = emptyS(), me = null;
 try {
   const raw = JSON.parse(localStorage.getItem('cadeaux.v1') || 'null');
@@ -506,7 +506,8 @@ function sharedState(withAuth) {
   if (withAuth) Object.keys(S.users || {}).forEach(k => { o.likes['user|' + k] = S.users[k]; });
   if (withAuth) { Object.keys(S.votes || {}).forEach(k => { o.likes['vote|' + k] = S.votes[k]; }); Object.keys(S.ballots || {}).forEach(k => { o.likes['ballot|' + k] = S.ballots[k]; }); } // votes d'arbitrage : synchro uniquement
   if (withAuth) Object.keys(S.wishes || {}).forEach(k => { o.likes['wish|' + k] = S.wishes[k]; });
-  delete o.wishes; delete o.tickets; delete o.auth; delete o.groups; delete o.pgroup; delete o.users; delete o.votes; delete o.ballots;
+  if (withAuth) Object.keys(S.claims || {}).forEach(k => { o.likes['claim|' + k] = S.claims[k]; });
+  delete o.claims; delete o.wishes; delete o.tickets; delete o.auth; delete o.groups; delete o.pgroup; delete o.users; delete o.votes; delete o.ballots;
   return o;
 }
 
@@ -1128,8 +1129,15 @@ function wishesView() {
     <div class="gtitle">${esc(w.t)}</div>
     ${w.price != null && w.price !== '' ? `<div class="sub" style="font-weight:700">${eur(+w.price)}</div>` : ''}
     ${w.note ? `<div class="tkdesc">${esc(w.note)}</div>` : ''}
-    <div class="gact">${w.url ? `<a class="link" href="${esc(w.url)}" target="_blank" rel="noopener">Voir le produit</a>` : ''}${!mineL ? `<span style="margin-left:auto"><button class="btn sm" data-act="offerWish" data-id="${w.id}">Offrir ça</button></span>` : ''}${mineL ? `<span style="margin-left:auto"><button class="link" data-act="editWish" data-id="${w.id}">Modifier</button><button class="link" data-act="delWish" data-id="${w.id}">Supprimer</button></span>` : ''}</div></div>`).join('')
+    <div class="gact">${w.url ? `<a class="link" href="${esc(w.url)}" target="_blank" rel="noopener">Voir le produit</a>` : ''}${!mineL ? wishClaimUi(w) : ''}${mineL ? `<span style="margin-left:auto"><button class="link" data-act="editWish" data-id="${w.id}">Modifier</button><button class="link" data-act="delWish" data-id="${w.id}">Supprimer</button></span>` : ''}</div></div>`).join('')
   : `<div class="empty">${IC.gift}<div>${mineL ? 'Ta liste est vide. Ajoute ce qui te ferait plaisir.' : `${esc(who)} n’a encore rien ajouté.`}</div></div>`}`;
+}
+function wishClaimUi(w) {
+  const c = S.claims && S.claims[w.id], by = c && !c.d ? c.by : null;
+  const hint = `<div class="sub" style="width:100%;margin-top:6px">${esc(w.owner)} ne voit jamais qui prend quoi.</div>`;
+  if (by === me) return `<span class="badge ok">Pris par toi</span><span style="margin-left:auto"><button class="link" data-act="offerWish" data-id="${w.id}">Offrir ça</button><button class="link" data-act="unclaimWish" data-id="${w.id}">Annuler</button></span>${hint}`;
+  if (by) return `<span class="badge bad">Déjà pris par ${esc(by)}</span>${hint}`;
+  return `<span style="margin-left:auto"><button class="link" data-act="offerWish" data-id="${w.id}">Offrir ça</button><button class="btn sm" data-act="claimWish" data-id="${w.id}">Je le prends</button></span>${hint}`;
 }
 function wishForm(w) {
   w = w || {};
@@ -1284,7 +1292,7 @@ function parseIncoming(txt) {
 function merge(inc, allowAuth) {
   let n = 0;
   const take = (c, k, rec) => { const cur = S[c][k]; if (rec && typeof rec === 'object' && (!cur || (rec.u || 0) > (cur.u || 0))) { S[c][k] = rec; n++; } };
-  COLL.forEach(c => { const m = inc[c] || {}; Object.keys(m).forEach(k => { if (c === 'likes' && k.indexOf('ticket|') === 0) take('tickets', k.slice(7), m[k]); else if (c === 'likes' && k.indexOf('auth|') === 0) { if (allowAuth) take('auth', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('user|') === 0) { if (allowAuth) take('users', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('pgroup|') === 0) { if (allowAuth) take('pgroup', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('group|') === 0) { if (allowAuth) take('groups', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('wish|') === 0) { if (allowAuth) take('wishes', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('ballot|') === 0) { if (allowAuth) take('ballots', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('vote|') === 0) { if (allowAuth) take('votes', k.slice(5), m[k]); } else take(c, k, m[k]); }); });
+  COLL.forEach(c => { const m = inc[c] || {}; Object.keys(m).forEach(k => { if (c === 'likes' && k.indexOf('ticket|') === 0) take('tickets', k.slice(7), m[k]); else if (c === 'likes' && k.indexOf('auth|') === 0) { if (allowAuth) take('auth', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('user|') === 0) { if (allowAuth) take('users', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('pgroup|') === 0) { if (allowAuth) take('pgroup', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('group|') === 0) { if (allowAuth) take('groups', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('claim|') === 0) { if (allowAuth) take('claims', k.slice(6), m[k]); } else if (c === 'likes' && k.indexOf('wish|') === 0) { if (allowAuth) take('wishes', k.slice(5), m[k]); } else if (c === 'likes' && k.indexOf('ballot|') === 0) { if (allowAuth) take('ballots', k.slice(7), m[k]); } else if (c === 'likes' && k.indexOf('vote|') === 0) { if (allowAuth) take('votes', k.slice(5), m[k]); } else take(c, k, m[k]); }); });
   Object.keys(inc.tickets || {}).forEach(k => take('tickets', k, inc.tickets[k]));
   if (n) rebuildUsers();
   persist(); return n;
@@ -1380,6 +1388,12 @@ const actions = {
   addUser() { openModal(userForm()); },
   wishUser(t) { wishUser = t.dataset.v; render(); },
   wishNoImg() { const f = $('#sheet form[data-form="wish"]'); if (f) { f.elements.img.value = ''; f.elements.file.value = ''; wishPv(); } },
+  claimWish(t) {
+    const id = t.dataset.id, w = S.wishes[id], c = S.claims[id]; if (!w || w.owner === me) return;
+    if (c && !c.d && c.by !== me) { toast(`${c.by} l’a déjà pris`); render(); return; }
+    put('claims', id, { by: me }); render(); toast('Noté, ' + w.owner + ' ne le saura pas');
+  },
+  unclaimWish(t) { const id = t.dataset.id, c = S.claims[id]; if (c && c.by === me) { del('claims', id); render(); } },
   addWish() { openModal(wishForm()); },
   offerWish(t) {
     const w = S.wishes[t.dataset.id]; if (!w || w.owner === me) return;
