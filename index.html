@@ -489,6 +489,14 @@ header.gate .dot{display:none}
 .pillb.red{background:var(--red);border-color:var(--red);color:#fff}
 .bub .bb{position:relative}
 .bub .bb em{position:absolute;right:-2px;top:-2px;min-width:20px;height:20px;border-radius:99px;background:#14243B;color:#fff;font:800 11px/20px var(--sans);font-style:normal;text-align:center;padding:0 5px;box-sizing:border-box}
+
+.qa{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.qb{display:flex;align-items:center;gap:9px;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:16px;padding:10px 12px;font:800 14px/1.2 var(--sans);color:var(--ink);cursor:pointer;letter-spacing:-.01em}
+.qb i{flex:none;width:34px;height:34px;border-radius:50%;background:#FBE0DC;color:var(--redd);display:flex;align-items:center;justify-content:center}
+.qb i svg{width:18px;height:18px}
+.qb.red{background:var(--red);border-color:var(--red);color:#fff}
+.qb.red i{background:rgba(255,255,255,.22);color:#fff}
+.qb:active{transform:scale(.97)}
 </style>
 </head>
 <body>
@@ -1066,7 +1074,7 @@ function homeView() {
     if (people.some(p => !groupOf(p.id))) rail += bub('gfilter', 'none', ask, 'Sans groupe', 'background:#E6ECF4;color:#4A5B73', fGroup === 'none', nIn(p => !groupOf(p.id)));
     rail += bub('groupsForm', null, pen, 'Gérer', 'background:#fff;border:2px dashed #9AA9BD;color:#4A5B73', false);
   } else if (people.length) rail += bub('groupsForm', null, plus, 'Créer un groupe', 'background:#fff;border:2px dashed #9AA9BD;color:#4A5B73', false);
-  h += `<div class="row between" style="margin:6px 0 10px;gap:8px"><h3 style="margin:0">À qui offrir ?</h3><span class="row" style="gap:8px"><button class="pillb" data-act="nav" data-v="wishes">Souhaits</button><button class="pillb red" data-act="addPerson">+ Personne</button></span></div>${rail ? `<div class="rail">${rail}</div>` : ''}`;
+  h += `<div class="qa"><button class="qb" data-act="nav" data-v="wishes"><i>${IC.gift}</i><span>Listes de souhaits</span></button><button class="qb red" data-act="addPerson"><i>${plus}</i><span>Ajouter une personne</span></button></div><h3 style="margin:20px 0 4px">À qui offrir ?</h3>${rail ? `<div class="rail">${rail}</div>` : ''}`;
   if (!people.length) return h + `<div class="empty">${IC.gift}<div>Ajoute la première personne à qui vous voulez faire un cadeau.</div></div>`;
   if (!groups.length || fGroup === 'all') {
     const order = groups.map(g => people.filter(p => groupOf(p.id) === g.id)).flat().concat(groups.length ? people.filter(p => !groupOf(p.id)) : people);
