@@ -518,6 +518,12 @@ header.gate .dot{display:none}
 .sw input:checked+i{box-shadow:0 0 0 2px var(--ink)}
 .sw input:focus-visible+i{outline:2px solid var(--ink);outline-offset:3px}
 label.sw{border:0;background:none;border-radius:50%;margin:0;padding:0;box-shadow:none}
+
+.msgbar{display:flex;align-items:center;gap:10px;width:100%;margin:2px 0 12px;padding:7px 8px 7px 8px;border:1px solid var(--line);border-radius:99px;background:#fff;font:700 13.5px var(--sans);color:var(--ink);cursor:pointer;text-align:left}
+.msgbar em{flex:none;min-width:24px;height:24px;border-radius:99px;background:var(--gold,#F4C542);color:var(--ink);font:800 13px/24px var(--sans);font-style:normal;text-align:center;padding:0 6px;box-sizing:border-box}
+.msgbar span{flex:1;color:var(--ink-m);font-weight:600}
+.msgbar b{color:var(--redd);font-weight:800;padding-right:8px}
+.msgbar:active{transform:scale(.99)}
 </style>
 </head>
 <body>
@@ -653,7 +659,7 @@ function missingSettings() {
 function bannerHtml() {
   const miss = missingSettings(), n = unreadN();
   return (miss.length ? `<div class="setup"><b>Attention, tes réglages ne sont pas terminés.</b><span>Il te reste à choisir ${listFr(miss)}. Ça sert à tes initiales, et au partage des paiements.</span><button class="btn sm" data-act="${miss.includes('ta couleur') ? 'profileForm' : 'duoForm'}">Régler maintenant</button></div>` : '')
-    + (n ? `<div class="setup"><b>${n === 1 ? 'Tu as un nouveau message' : 'Tu as ' + n + ' nouveaux messages'}</b><button class="btn sm" data-act="openInbox">Lire</button></div>` : '');
+    + (n ? `<button class="msgbar" data-act="openInbox"><em>${n}</em><span>${n === 1 ? 'nouveau message' : 'nouveaux messages'}</span><b>Lire ›</b></button>` : '');
 }
 function outBlock(pid) {
   const p = S.people[pid]; if (!p || isSoloP(p) || !memOf(p).includes(me)) return '';
