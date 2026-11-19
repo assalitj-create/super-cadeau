@@ -1608,6 +1608,15 @@ async function runPreview(force) {
   const f = $('#sheet form[data-form="gift"]'); if (!f) return;
   const url = f.elements.url.value.trim(), pv = $('#pv');
   if (!url) { pv.textContent = 'Colle d’abord un lien.'; return; }
+  const E0 = f.elements, D0 = f.dataset;
+  if (D0.autoUrl && D0.autoUrl !== url) {
+    /* nouveau lien : on efface ce que l'ancien lien avait rempli tout seul (titre, image, prix), sans toucher à ce que tu as saisi */
+    if (D0.autoT != null && E0.t.value === D0.autoT) E0.t.value = '';
+    if (D0.autoI != null && E0.img.value === D0.autoI) { E0.img.value = ''; E0.imgurl.value = ''; }
+    if (D0.autoP != null && E0.price.value === D0.autoP) E0.price.value = '';
+    delete D0.autoT; delete D0.autoI; delete D0.autoP;
+  }
+  const snap = { t: E0.t.value, i: E0.img.value, p: E0.price.value };
   const WAIT = ['Tu as le temps de te faire un café.', 'On va chercher les données du site…', 'Va faire un petit tour aux toilettes si tu veux, on t’attend.', 'Le site fait semblant de dormir, on le réveille.', 'On négocie avec le serveur, il fait son difficile.', 'Un pigeon voyageur apporte le prix.', 'Le père Noël vérifie sur sa liste.', 'On secoue le site pour faire tomber le prix.', 'Étire-toi, ça charge.', 'On demande poliment la photo au site.', 'Le prix a pris le chemin des écoliers.', 'Les lutins emballent les données.', 'Encore un instant, le hamster pédale à fond.', 'Tu peux compter jusqu’à dix, en général ça suffit.', 'On fouille les rayons du site…'];
   let wi = Math.floor(Math.random() * WAIT.length);
   const wmsg = () => { const m = WAIT[wi]; wi = (wi + 1 + Math.floor(Math.random() * (WAIT.length - 1))) % WAIT.length; return m; };
@@ -1633,6 +1642,10 @@ async function runPreview(force) {
     const m = url.match(/\/(?:dp|gp\/product|gp\/aw\/d|product)\/([A-Z0-9]{10})(?:[/?#]|$)/i);
     if (m && /amazon\.|amzn\./i.test(url)) { const u = `https://m.media-amazon.com/images/P/${m[1].toUpperCase()}.01._SCLZZZZZZZ_.jpg`; f.elements.img.value = u; f.elements.imgurl.value = u; }
   }
+  D0.autoUrl = url;
+  if (E0.t.value !== snap.t) D0.autoT = E0.t.value;
+  if (E0.img.value !== snap.i) D0.autoI = E0.img.value;
+  if (E0.price.value !== snap.p) D0.autoP = E0.price.value;
   if (f.elements.img.value.trim()) showPv();
   else pv.textContent = 'Ce site refuse la lecture automatique (lien court Amazon, par exemple). Saisis le nom et le prix, et ajoute une photo ou l’adresse d’une image.';
   if (notes.length) pv.insertAdjacentHTML('beforeend', notes.map(n => `<div class="pvnote">${esc(n)}</div>`).join(''));
@@ -1928,7 +1941,7 @@ document.addEventListener('change', e => {
   else if (t.id === 'file') { const fl = t.files[0]; if (fl) fl.text().then(doImport); t.value = ''; }
   else if (t.name === 'status' && t.closest('form[data-form="track"]')) { const f = t.form; if (sidx(t.value) >= 2) { if (!f.elements.bdate.value) f.elements.bdate.value = today(); if (!f.elements.buyer.value) f.elements.buyer.value = me; } }
   else if (t.name === 'img' && t.closest('form[data-form="gift"]')) showPv();
-  else if (t.name === 'url' && t.closest('form[data-form="gift"]')) { const f = t.form; if (t.value.trim() && (!f.elements.img.value.trim() || f.elements.price.value === '')) runPreview(false); }
+  else if (t.name === 'url' && t.closest('form[data-form="gift"]')) { const f = t.form; if (t.value.trim() && (t.value.trim() !== f.dataset.autoUrl || !f.elements.img.value.trim() || f.elements.price.value === '')) runPreview(false); }
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 (function () {
