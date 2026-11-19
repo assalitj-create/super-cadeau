@@ -649,8 +649,12 @@ const foyerApplies = pid => { const m = membersOf(pid); return m.some(u => isPar
 const isOut = (pid, u) => { const o = S.outs && S.outs[pid + '|' + u]; return !!o && !o.d; };
 const membersOf = pid => S.people[pid] ? memOf(S.people[pid]).filter(u => !isOut(pid, u)) : USERS;
 const prefOf = u => (S.prefs && S.prefs[u] && !S.prefs[u].d) ? S.prefs[u] : {};
-const inboxOf = () => live('msgs').filter(m => m.to === me).sort((a, b) => (b.c || 0) - (a.c || 0));
+const isMsg = m => !m.kind || m.kind === 'msg';
+const allInbox = () => live('msgs').filter(m => m.to === me).sort((a, b) => (b.c || 0) - (a.c || 0));
+const inboxOf = () => allInbox().filter(isMsg);
+const notifsOf = () => allInbox().filter(m => !isMsg(m));
 const unreadN = () => inboxOf().filter(m => !m.read).length;
+const unreadNotifN = () => notifsOf().filter(m => !m.read).length;
 function sendMsg(to, text, extra) { put('msgs', uid(), Object.assign({ from: me, to, t: text, c: Date.now(), read: false }, extra || {})); }
 function missingSettings() {
   const m = []; if (!(userColor(me) || prefOf(me).colorDone)) m.push('ta couleur'); if (!(foyerOf(me) || prefOf(me).duoDone)) m.push('ton duo');
@@ -684,10 +688,10 @@ function notifyGift(g, st, isNew) {
 let inboxFresh = new Set();
 function openNotifsAgain() { setTimeout(() => openModal(notifFeed()), 50); }
 function notifFeed() {
-  const list = inboxOf().slice(0, 40);
+  const list = notifsOf().slice(0, 40);
   return `<div class="nfeed"><h2>Notifications</h2>
   ${list.length ? list.map(m => `<div class="nitem ${inboxFresh.has(m.id) || (m.kind === 'invite' && m.state === 'pending') ? 'new' : ''}" data-act="notifGo" data-id="${m.id}" style="cursor:pointer"><div class="sub"><b>${m.kind === 'msg' || !m.kind ? esc(m.from) : (m.kind === 'notif' || m.kind === 'info' || m.kind === 'out' || m.kind === 'duo' ? 'Info' : esc(m.from))}</b>, ${whenFr(m.c)}</div><div class="tkdesc">${esc(m.t)}</div>${inviteUi(m)}</div>`).join('') : '<p class="note">Rien de nouveau pour l’instant.</p>'}
-  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Fermer</button><button type="button" class="btn sec" data-act="openInbox">Écrire un message</button></div></div>`;
+  <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Fermer</button><button type="button" class="btn sec" data-act="openInbox">Mes messages</button></div></div>`;
 }
 function inviteUi(m) {
   if (m.kind === 'ref') return refUi(m);
@@ -704,7 +708,7 @@ function budgetPrompt(pid) {
   <div class="actions"><button type="button" class="btn ghost" data-act="closeModal">Plus tard</button><button class="btn">Enregistrer</button></div></form>`;
 }
 function inboxView() {
-  const rec = inboxOf(), sent = live('msgs').filter(m => m.from === me).sort((a, b) => (b.c || 0) - (a.c || 0)).slice(0, 15);
+  const rec = inboxOf(), sent = live('msgs').filter(m => m.from === me && isMsg(m)).sort((a, b) => (b.c || 0) - (a.c || 0)).slice(0, 15);
   const when = c => c ? new Date(c).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
   return `<div class="row between"><button class="btn ghost sm" data-act="nav" data-v="more">← Retour</button></div>
   <h2 style="margin-top:14px">Messages</h2>
@@ -1034,7 +1038,7 @@ function render() {
   const hero = view === 'person'
       ? `<div class="hero"><div class="hrow"><button class="rb" data-act="nav" data-v="home" aria-label="Retour">${IC.back}</button><span><button class="rb" data-act="editPerson" data-id="${cur}" aria-label="Modifier">${IC.edit}</button><button class="rb" data-act="delPerson" data-id="${cur}" aria-label="Supprimer">${IC.trash}</button></span></div><div class="hname">${esc(S.people[cur].name)}</div><div class="hshare">${shareAvs(S.people[cur])}</div></div>`
       : '';
-  hdr.innerHTML = `<div class="top"><h1 data-act="nav" data-v="home" role="link" tabindex="0" style="cursor:pointer">${LOGO_W}Super Cadeau</h1><div class="row" style="gap:8px;flex-wrap:nowrap"><button class="bell" data-act="openNotifs" aria-label="Notifications${unreadN() ? ', ' + unreadN() + ' à lire' : ''}">${IC.bell}${unreadN() ? `<b class="bdot">${unreadN()}</b>` : ''}</button><button class="chip-user" data-act="nav" data-v="more" aria-label="Mon espace"><i>${IC.me}</i>Mon espace</button></div></div>` + hero;
+  hdr.innerHTML = `<div class="top"><h1 data-act="nav" data-v="home" role="link" tabindex="0" style="cursor:pointer">${LOGO_W}Super Cadeau</h1><div class="row" style="gap:8px;flex-wrap:nowrap"><button class="bell" data-act="openNotifs" aria-label="Notifications${unreadNotifN() ? ', ' + unreadNotifN() + ' à lire' : ''}">${IC.bell}${unreadNotifN() ? `<b class="bdot">${unreadNotifN()}</b>` : ''}</button><button class="chip-user" data-act="nav" data-v="more" aria-label="Mon espace"><i>${IC.me}</i>Mon espace</button></div></div>` + hero;
   const items = [['home', IC.gift, 'Qui'], ['ideas', IC.idea, 'Quoi'], ['track', IC.track, 'Quand'], ['budgets', IC.euro, 'Combien'], ['pay', IC.pay, 'Comment']];
   nav.innerHTML = items.map(([k, i, l]) => `<button data-act="nav" data-v="${k}" class="${(view === k || (view === 'person' && k === 'home') || (k === 'more' && (view === 'tickets' || view === 'sync' || view === 'wishes' || view === 'inbox'))) ? 'on' : ''}">${i}${l}${k === 'more' && unreadN() ? `<i class="ndot">${unreadN()}</i>` : ''}</button>`).join('');
   app.innerHTML = ({ home: homeView, person: personView, ideas: ideasView, track: trackView, budgets: budgetsView, pay: payView, more: moreView, inbox: inboxView, wishes: wishesView, tickets: ticketsView, sync: syncView }[view] || homeView)();
@@ -1243,7 +1247,7 @@ function refAnswer(vid, ok) {
   const v = voteGet(vid); if (!v || v.d) return;
   put('ballots', vid + '|ref|' + me, { vid, user: me, ok });
   const nv = voteGet(vid), p = S.people[v.pid], st = refState(nv);
-  inboxOf().filter(m => m.kind === 'ref' && m.vid === vid && !m.read).forEach(m => put('msgs', m.id, { read: true }));
+  notifsOf().filter(m => m.kind === 'ref' && m.vid === vid && !m.read).forEach(m => put('msgs', m.id, { read: true }));
   if (v.by !== me) sendMsg(v.by, ok ? `${me} accepte le référendum pour ${p ? p.name : ''}.` : `${me} refuse le référendum pour ${p ? p.name : ''}.`, { kind: 'notif', pid: v.pid });
   if (st === 'ok') notifyMembers(v.pid, 'Tout le monde est d’accord : le référendum est lancé, à vous de voter !');
   closeModal(); render(); toast(ok ? 'Accord enregistré' : 'Refus enregistré');
@@ -1773,14 +1777,14 @@ const actions = {
     sendMsg(m.from, `${me} ne participe pas au cadeau pour ${p ? p.name : 'cette personne'}.`, { kind: 'info' });
     closeModal(); render(); toast('Refus envoyé');
   },
-  openNotifs() { if ($('#sheet .nfeed')) { closeModal(); return; } inboxFresh = new Set(inboxOf().filter(m => !m.read).map(m => m.id)); inboxOf().forEach(m => { if (!m.read) put('msgs', m.id, { read: true }); }); render(); openModal(notifFeed()); },
+  openNotifs() { if ($('#sheet .nfeed')) { closeModal(); return; } inboxFresh = new Set(notifsOf().filter(m => !m.read).map(m => m.id)); notifsOf().forEach(m => { if (!m.read) put('msgs', m.id, { read: true }); }); render(); openModal(notifFeed()); },
   notifGo(t) {
     const m = S.msgs[t.dataset.id]; if (!m) return; const p = m.pid && S.people[m.pid];
     closeModal();
     if (m.kind === 'duo') { openModal(duoForm()); return; }
     if (p && !p.d && personOk(m.pid)) { view = 'person'; cur = m.pid; render(); window.scrollTo(0, 0); return; }
     if (m.kind === 'invite') { toast('Réponds avec « Oui » ou « Non merci »'); openNotifsAgain(); return; }
-    inboxFresh = new Set(); view = 'inbox'; render(); window.scrollTo(0, 0);
+    render();
   },
   openInbox() { inboxFresh = new Set(inboxOf().filter(m => !m.read).map(m => m.id)); inboxOf().forEach(m => { if (!m.read) put('msgs', m.id, { read: true }); }); view = 'inbox'; closeModal(); render(); },
   outForm(t) { openModal(outForm(t.dataset.id)); },
